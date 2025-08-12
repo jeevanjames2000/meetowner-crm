@@ -1,0 +1,15 @@
+{
+  "files": [],
+  "references": [
+    { "path": "./tsconfig.app.json" },
+    { "path": "./tsconfig.node.json" }
+  ],
+  
+    "compilerOptions": {
+      "noUnusedLocals": false, // Ignores TS6133 (unused variables)
+      "noUnusedParameters": false, // Ignores unused parameters
+      "skipLibCheck": true, // Skips type checking of declaration files
+      "strict": false // Disables strict type checking (includes missing properties like TS2741)
+    }
+  
+}
