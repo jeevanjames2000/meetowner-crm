@@ -6,6 +6,7 @@ import userSlice from './slices/userslice';
 import propertyDetails from './slices/propertyDetails';
 import leadSlice from './slices/leadslice';
 import projectSlice from './slices/projectSlice';
+import places from "./slices/places"
 import builderReducer from './slices/builderslice';
 
 
@@ -22,7 +23,8 @@ const store =  configureStore({
         property:propertyDetails,
         lead:leadSlice,
         projects:projectSlice,
-        builder:builderReducer
+        builder:builderReducer,
+        places:places
     },
     preloadedState,
     middleware: (getDefaultMiddleware) => getDefaultMiddleware({serializableCheck: false}),

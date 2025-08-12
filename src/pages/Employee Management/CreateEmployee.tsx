@@ -1,15 +1,25 @@
-import React, { useState, useEffect } from "react";
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+  useRef,
+} from "react";
 import { User, MapPin, KeyRound, Mail, EyeIcon, EyeOff } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "../../store/store";
 import Input from "../../components/form/input/InputField";
 import PhoneInput from "../../components/form/group-input/PhoneInput";
 import Dropdown from "../../components/form/Dropdown";
-import { usePropertyQueries } from "../../hooks/PropertyQueries";
+import Label from "../../components/form/Label";
 import toast from "react-hot-toast";
 import { insertUser } from "../../store/slices/userslice";
 import { useNavigate } from "react-router";
-import { setCityDetails } from "../../store/slices/propertyDetails";
+import {
+  fetchAllCities,
+  fetchAllStates,
+  fetchLocalities,
+} from "../../store/slices/places";
 interface FormData {
   name: string;
   mobile: string;
@@ -19,7 +29,7 @@ interface FormData {
   city: string;
   state: string;
   pincode: string;
-  location: string;
+  locality: string;
 }
 interface Errors {
   name?: string;
@@ -30,35 +40,113 @@ interface Errors {
   city?: string;
   state?: string;
   pincode?: string;
-  location?: string;
-  address?: string;
-  photo?: string;
+  locality?: string;
+}
+interface Option {
+  value: string;
+  text: string;
 }
 const CreateEmployee = () => {
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
-  const { states } = useSelector((state: RootState) => state.property);
   const { loading } = useSelector((state: RootState) => state.user);
-  const { citiesQuery, statesQuery } = usePropertyQueries();
   const { user, isAuthenticated } = useSelector(
     (state: RootState) => state.auth
   );
+  const { cities, states, localities } = useSelector(
+    (state: RootState) => state.places
+  );
+  const [isLocalityDropdownOpen, setIsLocalityDropdownOpen] = useState(false);
   const [formData, setFormData] = useState<FormData>({
     name: "",
     mobile: "",
     email: "",
     designation: "",
     password: "",
-    city: "Hyderabad",
-    state: "Telangana",
-    pincode: "530001",
-    location: "",
+    city: "",
+    state: "",
+    pincode: "",
+    locality: "",
   });
   const [errors, setErrors] = useState<Errors>({});
   const [showPassword, setShowPassword] = useState(false);
-  const citiesResult = citiesQuery(
-    formData.state ? parseInt(formData.state) : undefined
+  const localityInputRef = useRef<HTMLDivElement>(null);
+  const stateOptions = useMemo(
+    () => [
+      ...states
+        .filter(
+          (state) =>
+            state.name &&
+            typeof state.name === "string" &&
+            state.name.trim() !== ""
+        )
+        .map((state) => ({ value: state.name, text: state.name })),
+    ],
+    [states]
   );
+  const cityOptions = useMemo(
+    () => [
+      ...cities
+        .filter(
+          (city) =>
+            city.name &&
+            typeof city.name === "string" &&
+            city.name.trim() !== ""
+        )
+        .map((city) => ({ value: city.name, text: city.name })),
+    ],
+    [cities]
+  );
+  const placeOptions = useMemo(
+    () => [
+      ...localities
+        .filter(
+          (place) =>
+            place.locality &&
+            typeof place.locality === "string" &&
+            place.locality.trim() !== ""
+        )
+        .map((place) => ({ value: place.locality, text: place.locality })),
+    ],
+    [localities]
+  );
+  const debounce = <T extends (...args: any[]) => void>(
+    func: T,
+    wait: number
+  ) => {
+    let timeout: NodeJS.Timeout | null = null;
+    return (...args: Parameters<T>) => {
+      if (timeout) clearTimeout(timeout);
+      timeout = setTimeout(() => {
+        func(...args);
+        timeout = null;
+      }, wait);
+    };
+  };
+  useEffect(() => {
+    dispatch(fetchAllStates()).then((result) => {
+      if (fetchAllStates.rejected.match(result))
+        toast.error("Failed to load states.");
+    });
+  }, [dispatch]);
+  useEffect(() => {
+    if (formData.state) {
+      dispatch(fetchAllCities({ state: formData.state })).then((result) => {
+        if (fetchAllCities.rejected.match(result))
+          toast.error("Failed to load cities.");
+      });
+    }
+  }, [dispatch, formData.state]);
+  useEffect(() => {
+    if (formData.city && formData.state) {
+      dispatch(
+        fetchLocalities({ city: formData.city, state: formData.state })
+      ).then((result) => {
+        if (fetchLocalities.rejected.match(result))
+          toast.error("Failed to load localities.");
+      });
+    }
+  }, [dispatch, formData.city, formData.state]);
   useEffect(() => {
     if (!isAuthenticated || !user) {
       navigate("/login");
@@ -70,69 +158,85 @@ const CreateEmployee = () => {
       toast.error("Access denied: Only builders can create employees");
     }
   }, [isAuthenticated, user, navigate]);
-  useEffect(() => {
-    if (citiesResult.data) {
-      dispatch(setCityDetails(citiesResult.data));
-    }
-  }, [citiesResult.data, dispatch]);
-  useEffect(() => {
-    if (citiesResult.isError) {
-      toast.error(
-        `Failed to fetch cities: ${
-          citiesResult.error?.message || "Unknown error"
-        }`
+  const debouncedFetchLocalities = useCallback(
+    debounce((city: string, state: string, query: string) => {
+      dispatch(fetchLocalities({ city, state, query }));
+    }, 300),
+    [dispatch]
+  );
+  const handleLocalityChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const searchTerm = e.target.value;
+      setFormData((prev) => ({ ...prev, locality: searchTerm }));
+      if (formData.city && formData.state) {
+        debouncedFetchLocalities(formData.city, formData.state, searchTerm);
+        setIsLocalityDropdownOpen(true);
+      }
+      setErrors((prev) => ({ ...prev, locality: undefined }));
+    },
+    [formData.city, formData.state, debouncedFetchLocalities]
+  );
+  const handleLocalitySelect = useCallback((locality: string) => {
+    setFormData((prev) => ({ ...prev, locality }));
+    setIsLocalityDropdownOpen(false);
+    setErrors((prev) => ({ ...prev, locality: undefined }));
+  }, []);
+  const handleLocalityFocus = useCallback(() => {
+    if (formData.city && formData.state && formData.locality) {
+      debouncedFetchLocalities(
+        formData.city,
+        formData.state,
+        formData.locality
       );
-    }
-    if (statesQuery.isError) {
-      toast.error(
-        `Failed to fetch states: ${
-          statesQuery.error?.message || "Unknown error"
-        }`
-      );
+      setIsLocalityDropdownOpen(true);
     }
   }, [
-    citiesResult.isError,
-    citiesResult.error,
-    statesQuery.isError,
-    statesQuery.error,
+    formData.city,
+    formData.state,
+    formData.locality,
+    debouncedFetchLocalities,
   ]);
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        localityInputRef.current &&
+        !localityInputRef.current.contains(e.target as Node)
+      ) {
+        setIsLocalityDropdownOpen(false);
+      }
+    };
+    document.addEventListener("click", handleClickOutside);
+    return () => document.removeEventListener("click", handleClickOutside);
+  }, []);
+  const handleChange = useCallback(
+    (field: keyof FormData) => (value: string) => {
+      setFormData((prev) => ({
+        ...prev,
+        [field]: value,
+        ...(field === "state" ? { city: "", locality: "" } : {}),
+        ...(field === "city" ? { locality: "" } : {}),
+      }));
+      setErrors((prev) => ({ ...prev, [field]: undefined }));
+    },
+    []
+  );
   const allDesignationOptions = [
     { value: "4", text: "Sales Manager" },
     { value: "5", text: "Telecallers" },
     { value: "6", text: "Marketing Agent" },
     { value: "7", text: "Receptionists" },
   ];
-  const cityOptions =
-    citiesResult?.data?.map((city: any) => ({
-      value: city.value,
-      text: city.label,
-    })) || [];
-  const stateOptions =
-    states?.map((s: any) => ({ value: s.value, text: s.label })) || [];
-  const handleChange =
-    (field: keyof FormData) => (value: string | File | null) => {
-      setFormData((prev) => ({ ...prev, [field]: value }));
-      if (errors[field]) setErrors((prev) => ({ ...prev, [field]: undefined }));
-    };
-  const handleDropdownChange = (field: keyof FormData) => (value: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      [field]: value,
-      ...(field === "state" && { city: "" }),
-    }));
-    if (errors[field]) setErrors((prev) => ({ ...prev, [field]: undefined }));
-  };
   const validateForm = () => {
     const newErrors: Errors = {};
     if (!formData.name.trim()) {
       newErrors.name = "Name is required";
     } else if (!/^[A-Za-z\s]+$/.test(formData.name.trim())) {
-      newErrors.name = "Name should be alphabets and name spaces";
+      newErrors.name = "Name should contain only alphabets and spaces";
     }
     if (!formData.mobile.trim()) {
       newErrors.mobile = "Mobile number is required";
     } else if (!/^[6-9]\d{9}$/.test(formData.mobile.trim())) {
-      newErrors.mobile = "Enter a valid 10 digit mobile number";
+      newErrors.mobile = "Enter a valid 10-digit mobile number";
     }
     if (!formData.email.trim()) {
       newErrors.email = "Email is required";
@@ -141,20 +245,24 @@ const CreateEmployee = () => {
     }
     if (!formData.designation) {
       newErrors.designation = "Select a designation";
-    } else if (!/^[A-Za-z]+$/.test(formData.name.trim())) {
-      newErrors.designation = "Designation only contains Alphabets and Spaces";
     }
-    if (!formData.password) newErrors.password = "Password is required";
-    if (!formData.city) newErrors.city = "Select a city";
-    if (!formData.state) newErrors.state = "Select a state";
+    if (!formData.password) {
+      newErrors.password = "Password is required";
+    }
+    if (!formData.state) {
+      newErrors.state = "Select a state";
+    }
+    if (!formData.city) {
+      newErrors.city = "Select a city";
+    }
+    if (!formData.locality.trim()) {
+      newErrors.locality = "Locality is required";
+    }
     if (!formData.pincode.trim()) {
       newErrors.pincode = "Pincode is required";
     } else if (!/^\d{6}$/.test(formData.pincode)) {
-      newErrors.pincode = "Enter valid 6-digit pincode";
+      newErrors.pincode = "Enter a valid 6-digit pincode";
     }
-    if (!formData.location.trim()) newErrors.location = "Location is required";
-    if (!formData.address.trim()) newErrors.address = "Address is required";
-    if (!formData.photo) newErrors.photo = "Photo is required";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -168,20 +276,18 @@ const CreateEmployee = () => {
       mobile: formData.mobile,
       email: formData.email,
       password: formData.password,
-      city:
-        cityOptions.find((c) => c.value === formData.city)?.text ||
-        formData.city,
-      state:
-        stateOptions.find((s) => s.value === formData.state)?.text ||
-        formData.state,
+      city: formData.city,
+      state: formData.state,
       pincode: formData.pincode,
-      location: formData.location,
+      location: formData.locality,
       user_type: formData.designation,
+      designation: formData.designation,
       created_by: createdBy,
       created_userID: createdUserId,
     };
     try {
       await dispatch(insertUser(payload)).unwrap();
+      toast.success("Employee created successfully");
       setFormData({
         name: "",
         mobile: "",
@@ -191,11 +297,13 @@ const CreateEmployee = () => {
         city: "",
         state: "",
         pincode: "",
-        location: "",
+        locality: "",
       });
       setErrors({});
+      navigate("/");
     } catch (error) {
       console.error("User Insertion failed:", error);
+      toast.error("Failed to create employee");
     }
   };
   return (
@@ -211,8 +319,7 @@ const CreateEmployee = () => {
         </div>
         <div className="bg-white/70 backdrop-blur-xl rounded-2xl shadow-xl p-8 border border-white/30">
           <form onSubmit={handleSubmit} className="space-y-6">
-            {}
-            <div>
+            <div className="min-h-[80px]">
               <label className="text-sm font-medium text-gray-700 flex items-center gap-1">
                 <User size={16} /> Name
               </label>
@@ -225,8 +332,7 @@ const CreateEmployee = () => {
                 <p className="text-red-600 text-sm mt-1">⚠️ {errors.name}</p>
               )}
             </div>
-            {}
-            <div>
+            <div className="min-h-[80px]">
               <label className="text-sm font-medium text-gray-700">
                 Mobile
               </label>
@@ -240,8 +346,7 @@ const CreateEmployee = () => {
                 <p className="text-red-600 text-sm mt-1">⚠️ {errors.mobile}</p>
               )}
             </div>
-            {}
-            <div>
+            <div className="min-h-[80px]">
               <label className="text-sm font-medium text-gray-700 flex items-center gap-1">
                 <Mail size={16} /> Email
               </label>
@@ -255,20 +360,18 @@ const CreateEmployee = () => {
                 <p className="text-red-600 text-sm mt-1">⚠️ {errors.email}</p>
               )}
             </div>
-            {}
             <div className="min-h-[80px] w-full max-w-md">
               <Dropdown
                 id="designation"
                 label="Select Designation"
                 options={allDesignationOptions}
                 value={formData.designation}
-                onChange={handleDropdownChange("designation")}
+                onChange={handleChange("designation")}
                 placeholder="Select a designation"
                 error={errors.designation}
               />
             </div>
-            {}
-            <div className="relative">
+            <div className="min-h-[80px] relative">
               <label className="text-sm font-medium text-gray-700 flex items-center gap-1">
                 <KeyRound size={16} /> Password
               </label>
@@ -291,48 +394,65 @@ const CreateEmployee = () => {
                 </p>
               )}
             </div>
-            {}
             <div className="min-h-[80px] w-full max-w-md">
               <Dropdown
                 id="state"
-                label="Select State"
+                label="Select State *"
                 options={stateOptions}
                 value={formData.state}
-                onChange={handleDropdownChange("state")}
+                onChange={handleChange("state")}
                 placeholder="Search for a state..."
                 error={errors.state}
               />
             </div>
-            {}
             <div className="min-h-[80px] w-full max-w-md">
               <Dropdown
                 id="city"
-                label="Select City"
+                label="Select City *"
                 options={cityOptions}
                 value={formData.city}
-                onChange={handleDropdownChange("city")}
+                onChange={handleChange("city")}
                 placeholder="Search for a city..."
                 disabled={!formData.state}
                 error={errors.city}
               />
             </div>
-            {}
-            <div>
-              <label className="text-sm font-medium text-gray-700 flex items-center gap-1">
-                <MapPin size={16} /> Location
-              </label>
+            <div className="min-h-[80px] relative" ref={localityInputRef}>
+              <Label htmlFor="locality">Select Locality *</Label>
               <Input
-                value={formData.location}
-                onChange={(e) => handleChange("location")(e.target.value)}
-                placeholder="Enter location"
+                type="text"
+                id="locality"
+                value={formData.locality}
+                onChange={handleLocalityChange}
+                onFocus={handleLocalityFocus}
+                placeholder="Search for a locality..."
+                disabled={!formData.city}
+                className="dark:bg-gray-800"
               />
-              {errors.location && (
-                <p className="text-red-600 text-sm mt-1">
-                  ⚠️ {errors.location}
-                </p>
+              {isLocalityDropdownOpen && formData.city && (
+                <ul className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-[200px] overflow-y-auto">
+                  {placeOptions.length > 0 ? (
+                    placeOptions.map((option) => (
+                      <li
+                        key={option.value}
+                        onClick={() => handleLocalitySelect(option.value)}
+                        className="px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
+                      >
+                        {option.text}
+                      </li>
+                    ))
+                  ) : (
+                    <li className="px-4 py-2 text-sm text-gray-500 dark:text-gray-400">
+                      No localities found
+                    </li>
+                  )}
+                </ul>
+              )}
+              {errors.locality && (
+                <p className="text-red-500 text-sm mt-1">{errors.locality}</p>
               )}
             </div>
-            <div>
+            <div className="min-h-[80px]">
               <label className="text-sm font-medium text-gray-700 flex items-center gap-1">
                 <MapPin size={16} /> Pincode
               </label>

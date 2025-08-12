@@ -113,7 +113,7 @@ const AppHeader: React.FC = () => {
           </button>
         </div>
 
-        {/* <div
+        <div
           className={`application-menu flex items-center justify-between w-full gap-4 px-5 py-4 lg:flex lg:justify-end lg:px-0 lg:shadow-none ${
             isApplicationMenuOpen ? "block" : "hidden"
           } lg:block shadow-theme-md`}
@@ -121,7 +121,7 @@ const AppHeader: React.FC = () => {
           <div className="flex items-center gap-3">
             <UserDropdown />
           </div>
-        </div> */}
+        </div>
       </div>
     </header>
   );

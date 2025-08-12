@@ -3,7 +3,7 @@ import { AxiosError } from "axios";
 import { toast } from "react-hot-toast";
 import ngrokAxiosInstance from "../../hooks/AxiosInstance";
 import { ErrorResponse, UserCount, UserCountResponse, User, UsersResponse, UserState, UpdateUserStatusResponse, UpdateUserStatusRequest, DeleteUserResponse } from "../../types/UserModel";
-import axiosIstance from "../../utils/axiosInstance";
+import axiosIstance from "../../hooks/AxiosInstance";
 
 
 export interface InsertUserRequest {
@@ -56,6 +56,7 @@ export const insertUser = createAsyncThunk<
 >(
   "user/insertUser",
   async (formData, { rejectWithValue }) => {
+    console.log("formData: ", formData);
     try {
       const token = localStorage.getItem("token");
       if (!token) {
@@ -63,12 +64,12 @@ export const insertUser = createAsyncThunk<
       }
 
       const response = await axiosIstance.post<InsertUserResponse>(
-        `/api/v1/insertuser`,
+        `/meetCRM/v2/createEmp`,
         formData,
         {
           headers: {
             Authorization: `Bearer ${token}`,
-            "Content-Type": "multipart/form-data",
+            "Content-Type": "application/json",
           },
         }
       );
@@ -152,11 +153,11 @@ export const getTypesCount = createAsyncThunk<
 
 export const getUsersByType = createAsyncThunk<
   User[],
-  { admin_user_id: number; emp_user_type: number },
+  { created_user_id: number; user_type: number },
   { rejectValue: string }
 >(
   "user/getUsersByType",
-  async ({ admin_user_id, emp_user_type }, { rejectWithValue }) => {
+  async ({ created_user_id,user_type }, { rejectWithValue }) => {
     try {
       const token = localStorage.getItem("token");
       if (!token) {
@@ -164,7 +165,7 @@ export const getUsersByType = createAsyncThunk<
       }
 
       const response = await ngrokAxiosInstance.get<UsersResponse>(
-        `/api/v1/getUsersTypesByBuilder?admin_user_id=${admin_user_id}&emp_user_type=${emp_user_type}`,
+        `/meetCRM/v2/getUsersTypeandCreatedBy?created_user_id=${created_user_id}&user_type=${user_type}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -172,7 +173,7 @@ export const getUsersByType = createAsyncThunk<
         }
       );
 
-      return response.data.data;
+      return response.data;
     } catch (error) {
       const axiosError = error as AxiosError<ErrorResponse>;
       console.error("Get users by type error:", axiosError);

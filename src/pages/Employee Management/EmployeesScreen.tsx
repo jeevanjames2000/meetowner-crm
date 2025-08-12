@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate, useParams } from "react-router";
+
 import { useSelector, useDispatch } from "react-redux";
 import toast from "react-hot-toast";
 import {
@@ -10,7 +10,6 @@ import {
   TableRow,
 } from "../../components/ui/table";
 import Button from "../../components/ui/button/Button";
-
 import PageBreadcrumbList from "../../components/common/PageBreadCrumbLists";
 import Pagination from "../../components/ui/pagination/Pagination";
 import FilterBar from "../../components/common/FilterBar";
@@ -25,6 +24,28 @@ import { getStatusDisplay } from "../../utils/statusdisplay";
 import ConfirmDeleteUserModal from "../../components/common/ConfirmDeleteUserModal";
 import { usePropertyQueries } from "../../hooks/PropertyQueries";
 import { setCityDetails } from "../../store/slices/propertyDetails";
+import { Link, useNavigate, useParams } from "react-router";
+
+// Mock API data
+const mockUsers = [
+  {
+    id: 4,
+    name: "sdf",
+    mobile: "6302816551",
+    email: "jeevanjames2000@gmail.com",
+    designation: "5",
+    password: "$2b$10$kQQ/NTGMermyCkrRYEPZb.AD8WmOL4l/FIkrnhPbdeGyh04jzC8vO",
+    city: "Visakhapatnam",
+    pincode: "531163",
+    state: "Andhra Pradesh",
+    user_type: 5,
+    created_by: "Builder User",
+    created_userID: 1070,
+    created_at: "2025-08-12T01:28:51.000Z",
+    created_date: "2025-08-11T18:30:00.000Z",
+    created_time: "12:28:51",
+  },
+];
 
 const userTypeMap: { [key: number]: string } = {
   4: "Sales Manager",
@@ -65,19 +86,16 @@ export default function EmployeesScreen() {
   const empUserType = Number(status);
   const categoryLabel = userTypeMap[empUserType] || "Employees";
 
-  // Fetch cities based on selected state
   const citiesResult = citiesQuery(
     selectedState ? parseInt(selectedState) : undefined
   );
 
-  // Dispatch cities to Redux store
   useEffect(() => {
     if (citiesResult.data) {
       dispatch(setCityDetails(citiesResult.data));
     }
   }, [citiesResult.data, dispatch]);
 
-  // Handle errors for city fetching
   useEffect(() => {
     if (citiesResult.isError) {
       toast.error(
@@ -88,11 +106,15 @@ export default function EmployeesScreen() {
     }
   }, [citiesResult.isError, citiesResult.error]);
 
+  // Use mock data instead of fetching from API for this example
   useEffect(() => {
     if (isAuthenticated && user?.id && empUserType) {
-      dispatch(
-        getUsersByType({ admin_user_id: user.id, emp_user_type: empUserType })
-      );
+      // Simulate fetching users by setting mock data to state
+      // In a real scenario, replace this with dispatch(getUsersByType(...))
+      dispatch({
+        type: "user/getUsersByType/fulfilled",
+        payload: mockUsers.filter((u) => u.user_type === empUserType),
+      });
     }
     return () => {
       dispatch(clearUsers());
@@ -107,31 +129,26 @@ export default function EmployeesScreen() {
         user.email,
         user.city,
         user.state,
-        user.gst_number,
-        user.rera_number,
+        user.pincode, // Added pincode to filterable fields
       ]
         .map((field) => field?.toLowerCase() || "")
         .some((field) => field.includes(filterValue.toLowerCase()));
-
       const userCreatedDate = formatDate(user.created_date);
       const matchesCreatedDate =
         (!createdDate || userCreatedDate >= createdDate) &&
         (!createdEndDate || userCreatedDate <= createdEndDate);
-
       const matchesState =
         !selectedState ||
         user.state?.toLowerCase() ===
           states
             .find((s) => s.value.toString() === selectedState)
             ?.label.toLowerCase();
-
       const matchesCity =
         !selectedCity ||
         (citiesResult.data &&
           citiesResult.data
             .find((c) => c.value.toString() === selectedCity)
             ?.label.toLowerCase() === user.city?.toLowerCase());
-
       return (
         matchesTextFilter && matchesCreatedDate && matchesState && matchesCity
       );
@@ -142,17 +159,11 @@ export default function EmployeesScreen() {
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
   const paginatedUsers = filteredUsers.slice(startIndex, endIndex);
-  console.log("paginatedUsers: ", paginatedUsers);
 
   const handleViewProfile = (id: number) => {
     if (isAuthenticated && user?.id && empUserType) {
       navigate(`/employeedetails/${empUserType}/${id}`);
     }
-  };
-
-  const handleDelete = (user: User) => {
-    setSelectedUser(user);
-    setIsDeleteModalOpen(true);
   };
 
   const handleConfirmDelete = async () => {
@@ -168,7 +179,8 @@ export default function EmployeesScreen() {
         setStatusUpdated(!statusUpdated);
         setIsDeleteModalOpen(false);
         setSelectedUser(null);
-        setSelectedUserId(null); // Deselect after deletion
+        setSelectedUserId(null);
+        toast.success("Employee deleted successfully");
       } catch (error) {
         console.error("Failed to delete user:", error);
         toast.error(error as string);
@@ -198,7 +210,7 @@ export default function EmployeesScreen() {
 
   const handleStateChange = (value: string | null) => {
     setSelectedState(value);
-    setSelectedCity(null); // Reset city when state changes
+    setSelectedCity(null);
     setCurrentPage(1);
   };
 
@@ -261,7 +273,7 @@ export default function EmployeesScreen() {
       <div className="mb-2 flex gap-2">
         <PageBreadcrumbList
           pageTitle={`${categoryLabel} Table`}
-          pagePlacHolder="Filter employees by name, mobile,city"
+          pagePlacHolder="Filter employees by name, mobile, email, city, state, pincode"
           onFilter={handleFilter}
         />
         <Button
@@ -296,8 +308,8 @@ export default function EmployeesScreen() {
               onClick={() =>
                 dispatch(
                   getUsersByType({
-                    admin_user_id: user!.id,
-                    emp_user_type: empUserType,
+                    created_user_id: user!.id,
+                    user_type: empUserType,
                   })
                 )
               }
@@ -338,28 +350,40 @@ export default function EmployeesScreen() {
                     </TableCell>
                     <TableCell
                       isHeader
-                      className="px-5 py-3 font-medium text-white text-start text-theme-xs whitespace-nowrap w-[10%]"
+                      className="px-5 py-3 font-medium text-white text-start text-theme-xs whitespace-nowrap w-[15%]"
+                    >
+                      Email
+                    </TableCell>
+                    <TableCell
+                      isHeader
+                      className="px-5 py-3 font-medium text-white text-start text-theme-xs whitespace-nowrap w-[15%]"
+                    >
+                      Designation
+                    </TableCell>
+                    <TableCell
+                      isHeader
+                      className="px-5 py-3 font-medium text-white text-start text-theme-xs whitespace-nowrap w-[15%]"
                     >
                       City
                     </TableCell>
                     <TableCell
                       isHeader
-                      className="px-5 py-3 font-medium text-white text-start text-theme-xs whitespace-nowrap w-[10%]"
+                      className="px-5 py-3 font-medium text-white text-start text-theme-xs whitespace-nowrap w-[15%]"
                     >
-                      Since
+                      State
                     </TableCell>
                     <TableCell
                       isHeader
                       className="px-5 py-3 font-medium text-white text-start text-theme-xs whitespace-nowrap w-[10%]"
                     >
-                      Status
+                      Created At
                     </TableCell>
                   </TableRow>
                 </TableHeader>
                 <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
                   {paginatedUsers.map((user) => {
                     const { text: statusText, className: statusClass } =
-                      getStatusDisplay(user.status);
+                      getStatusDisplay(user.status || "active"); // Default to 'active' if status is undefined
                     return (
                       <TableRow
                         key={user.id}
@@ -394,18 +418,20 @@ export default function EmployeesScreen() {
                         <TableCell className="px-5 py-4 sm:px-6 text-start text-gray-500 text-theme-sm dark:text-gray-400 whitespace-nowrap w-[15%]">
                           {user.mobile}
                         </TableCell>
-                        <TableCell className="px-5 py-4 sm:px-6 text-start text-gray-500 text-theme-sm dark:text-gray-400 whitespace-nowrap w-[10%]">
+                        <TableCell className="px-5 py-4 sm:px-6 text-start text-gray-500 text-theme-sm dark:text-gray-400 whitespace-nowrap w-[15%]">
+                          {user.email}
+                        </TableCell>
+                        <TableCell className="px-5 py-4 sm:px-6 text-start text-gray-500 text-theme-sm dark:text-gray-400 whitespace-nowrap w-[15%]">
+                          {userTypeMap[user.user_type] || "Unknown"}
+                        </TableCell>
+                        <TableCell className="px-5 py-4 sm:px-6 text-start text-gray-500 text-theme-sm dark:text-gray-400 whitespace-nowrap w-[15%]">
                           {user.city}
                         </TableCell>
-                        <TableCell className="px-5 py-4 sm:px-6 text-start text-gray-500 text-theme-sm dark:text-gray-400 whitespace-nowrap w-[10%]">
-                          {formatDate(user.created_date)}
+                        <TableCell className="px-5 py-4 sm:px-6 text-start text-gray-500 text-theme-sm dark:text-gray-400 whitespace-nowrap w-[15%]">
+                          {user.state}
                         </TableCell>
-                        <TableCell className="px-5 py-4 sm:px-6 text-start text-theme-sm whitespace-nowrap w-[10%]">
-                          <span
-                            className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${statusClass}`}
-                          >
-                            {statusText}
-                          </span>
+                        <TableCell className="px-5 py-4 sm:px-6 text-start text-gray-500 text-theme-sm dark:text-gray-400 whitespace-nowrap w-[10%]">
+                          {formatDate(user.created_at)}
                         </TableCell>
                       </TableRow>
                     );
