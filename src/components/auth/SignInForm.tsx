@@ -3,12 +3,13 @@ import { EyeCloseIcon, EyeIcon } from "../../icons";
 import { useDispatch, useSelector } from "react-redux";
 import { Navigate, useNavigate } from "react-router";
 import {
-  loginUser,
-  sendOtpAdmin,
+
   verifyOtpAdmin,
   resetOtpState,
-  sendWhatsapp,
-  verifyWhatsappOtpLocally,
+  sendUnifiedOtp,
+  loginUser,
+ 
+  
 } from "../../store/slices/authSlice";
 
 import { toast } from "react-hot-toast";
@@ -16,29 +17,40 @@ import { AppDispatch, RootState } from "../../store/store";
 import Label from "../form/Label";
 import Input from "../form/input/InputField";
 import Button from "../ui/button/Button";
+
+
+
+
 export default function SignInForm() {
   const dispatch = useDispatch<AppDispatch>();
+  
   const navigate = useNavigate();
   const formRef = useRef<HTMLFormElement>(null);
   const submitButtonRef = useRef<HTMLButtonElement>(null);
+  const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     mobile: "",
+
     otp: "",
     countryCode: "+91",
   });
   const [errors, setErrors] = useState({
     mobile: "",
+
     otp: "",
     general: "",
   });
   const {
     isAuthenticated,
     loading,
+    tempUser,
     error,
+otp,
     otpSent,
     otpVerified,
     isWhatsappFlow,
   } = useSelector((state: RootState) => state.auth);
+console.log("df",tempUser)
   const validateMobile = (mobile: string) => {
     const mobileRegex = /^\d{7,15}$/;
     return mobileRegex.test(mobile)
@@ -70,42 +82,13 @@ export default function SignInForm() {
   };
   const handleSubmitLogin = async (e: { preventDefault: () => void }) => {
     e.preventDefault();
-    const newErrors = { mobile: "", otp: "", general: "" };
-    let hasError = false;
-    if (!formData.mobile.trim()) {
-      newErrors.mobile = "Mobile number is required";
-      hasError = true;
-    }
-
-    const mobileError = validateMobile(formData.mobile);
-    if (mobileError) {
-      newErrors.mobile = mobileError;
-      hasError = true;
-    }
-
-    try {
-      await dispatch(
-        loginUser({
-          mobile: formData.mobile,
-          isWhatsapp: false,
-        })
-      ).unwrap();
-    } catch (err: any) {
-      setErrors((prevErrors) => ({
-        ...prevErrors,
-        general: err.message || "Access denied!",
-      }));
-      toast.error(err.message || "Access denied!");
-    }
-  };
-  const handleWhatsappLogin = async () => {
     const newErrors = { mobile: "", password: "", otp: "", general: "" };
     let hasError = false;
     if (!formData.mobile.trim()) {
       newErrors.mobile = "Mobile number is required";
       hasError = true;
     }
-
+   
     const mobileError = validateMobile(formData.mobile);
     if (mobileError) {
       newErrors.mobile = mobileError;
@@ -120,8 +103,6 @@ export default function SignInForm() {
       await dispatch(
         loginUser({
           mobile: formData.mobile,
-          isWhatsapp: true,
-          countryCode: formData.countryCode,
         })
       ).unwrap();
     } catch (err: any) {
@@ -132,9 +113,10 @@ export default function SignInForm() {
       toast.error(err.message || "Access denied!");
     }
   };
+  
   const handleSubmitOtp = async (e: { preventDefault: () => void }) => {
     e.preventDefault();
-    const newErrors = { mobile: "", otp: "", general: "" };
+    const newErrors = { mobile: "", password: "", otp: "", general: "" };
     let hasError = false;
     if (!formData.otp.trim()) {
       newErrors.otp = "OTP is required";
@@ -146,9 +128,7 @@ export default function SignInForm() {
       return;
     }
     try {
-      if (isWhatsappFlow) {
-        dispatch(verifyWhatsappOtpLocally({ otp: formData.otp }));
-      } else {
+     
         await dispatch(
           verifyOtpAdmin({
             mobile: formData.mobile,
@@ -156,7 +136,7 @@ export default function SignInForm() {
           })
         ).unwrap();
         navigate("/");
-      }
+      
     } catch (err: any) {
       setErrors((prevErrors) => ({
         ...prevErrors,
@@ -167,16 +147,9 @@ export default function SignInForm() {
   };
   const handleResendOtp = async () => {
     try {
-      if (isWhatsappFlow) {
-        await dispatch(
-          sendWhatsapp({
-            mobile: formData.mobile,
-            countryCode: formData.countryCode,
-          })
-        ).unwrap();
-      } else {
-        await dispatch(sendOtpAdmin({ mobile: formData.mobile })).unwrap();
-      }
+      
+        await dispatch(sendUnifiedOtp({ mobile: formData.mobile })).unwrap();
+      
     } catch (err: any) {
       setErrors((prevErrors) => ({
         ...prevErrors,
@@ -188,9 +161,9 @@ export default function SignInForm() {
   const handleBackToLogin = () => {
     dispatch(resetOtpState());
     setFormData((prev) => ({ ...prev, otp: "" }));
-    setErrors({ mobile: "", otp: "", general: "" });
+    setErrors({ mobile: "",  otp: "", general: "" });
   };
-  useEffect(() => {
+  useEffect(() => { 
     if (error) {
       setErrors((prevErrors) => ({
         ...prevErrors,
@@ -248,6 +221,7 @@ export default function SignInForm() {
                       </p>
                     )}
                   </div>
+                  
                 </>
               ) : (
                 <>
@@ -290,7 +264,7 @@ export default function SignInForm() {
                     : "Sign in"}
                 </Button>
               </div>
-              {!otpSent && (
+              {/* {!otpSent && (
                 <div>
                   <Button
                     type="button"
@@ -302,7 +276,7 @@ export default function SignInForm() {
                     {loading ? "Signing in..." : "Sign in with WhatsApp"}
                   </Button>
                 </div>
-              )}
+              )} */}
             </div>
             {otpSent && (
               <div className="flex justify-between mt-2">

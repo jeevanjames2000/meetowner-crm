@@ -3,7 +3,7 @@ import { AxiosError } from "axios";
 import { toast } from "react-hot-toast";
 import { jwtDecode } from "jwt-decode";
 import ngrokAxiosInstance from "../../hooks/AxiosInstance";
-
+import CryptoJS from "crypto-js";
 interface LoginRequest {
   mobile: string;
   isWhatsapp?: boolean;
@@ -12,6 +12,8 @@ interface LoginRequest {
 
 interface SendOtpRequest {
   mobile: string;
+  decryptedOtp?: string | null
+
 }
 
 interface SendWhatsappRequest {
@@ -131,6 +133,38 @@ interface UserCount {
   percentage?: number;
 }
 
+
+
+const JWT_SECRET = "khsfskhfks983493123!@#JSFKORuiweo232";
+export const OTP_LENGTH = 4;
+export const RESEND_COOLDOWN = 30;
+
+export function decrypt(encryptedText: string): string | null {
+  try {
+    const [ivHex, encryptedHex] = encryptedText.split(":");
+    if (!ivHex || !encryptedHex) return null;
+
+    const iv = CryptoJS.enc.Hex.parse(ivHex);
+    const encrypted = CryptoJS.enc.Hex.parse(encryptedHex);
+    const key = CryptoJS.SHA256(JWT_SECRET);
+
+    const decrypted = CryptoJS.AES.decrypt(
+      { ciphertext: encrypted } as CryptoJS.lib.CipherParams,
+      key,
+      {
+        iv,
+        mode: CryptoJS.mode.CBC,
+        padding: CryptoJS.pad.Pkcs7,
+      }
+    );
+
+    const result = decrypted.toString(CryptoJS.enc.Utf8);
+    return result || null;
+  } catch {
+    return null;
+  }
+}
+
 export const loginUser = createAsyncThunk(
   "auth/loginUser",
   async (credentials: LoginRequest, { rejectWithValue, dispatch }) => {
@@ -144,17 +178,15 @@ export const loginUser = createAsyncThunk(
         error: "Login failed",
       });
       const response = await promise;
-      if (credentials.isWhatsapp) {
-        await dispatch(
-          sendWhatsapp({
-            mobile: credentials.mobile,
-            countryCode: credentials.countryCode || "+91",
-          })
-        ).unwrap();
-      } else {
-        await dispatch(sendOtpAdmin({ mobile: credentials.mobile })).unwrap();
-      }
-      return response.data;
+      console.log(
+        "Login response:", response.data.user_details
+      )
+
+      await dispatch(sendUnifiedOtp({ mobile: credentials.mobile })).unwrap();
+
+      return response.data.user_details
+
+
     } catch (error) {
       const axiosError = error as AxiosError<ErrorResponse>;
       console.error("Login error:", axiosError);
@@ -180,66 +212,116 @@ export const loginUser = createAsyncThunk(
     }
   }
 );
-
-export const sendOtpAdmin = createAsyncThunk(
-  "auth/sendOtpAdmin",
-  async ({ mobile }: SendOtpRequest, { rejectWithValue }) => {
+export const sendUnifiedOtp = createAsyncThunk(
+  "auth/sendUnifiedOtp",
+  async ({ mobile }: { mobile: string }, { rejectWithValue }) => {
     try {
-      const response = await ngrokAxiosInstance.get<OtpResponse>("/auth/v1/sendOtpAdmin", {
-        params: { mobile },
-      });
-      toast.success(response.data.message);
-      return response.data;
-    } catch (error) {
-      const axiosError = error as AxiosError<ErrorResponse>;
-      console.error("Send OTP error:", axiosError);
-      toast.error("Failed to send OTP");
-      return rejectWithValue(
-        axiosError.response?.data?.message || "Failed to send OTP"
+      const response = await ngrokAxiosInstance.post<OtpResponse>(
+        "/auth/v1/sendBothOtps",
+        { mobile, countryCode: "91" },
+        { headers: { "Content-Type": "application/json" } }
       );
-    }
-  }
-);
 
-export const sendWhatsapp = createAsyncThunk(
-  "auth/sendWhatsapp",
-  async ({ mobile, countryCode }: SendWhatsappRequest, { rejectWithValue }) => {
-    try {
-      const response = await ngrokAxiosInstance.post<WhatsappOtpResponse>(
-        "/auth/v1/sendGallaboxOTP",
-        {
-          mobile,
-          countryCode: countryCode?.replace("+", "") || "91",
+      if (response.data.status === "success") {
+        const otp = response.data?.otp || null;
+
+        // Decrypt if available
+        let decryptedOtp: string | null = null;
+        if (otp) {
+          try {
+            decryptedOtp = decrypt(otp); // Decrypt the OTP
+            if (!decryptedOtp) {
+              return rejectWithValue("Failed to decrypt OTP");
+            }
+          } catch {
+            return rejectWithValue("Failed to decrypt OTP");
+          }
         }
-      );
-      toast.success("WhatsApp OTP sent!");
-      return response.data;
+
+        return {
+          otp: decryptedOtp, // Store decrypted OTP
+          message: `OTP sent to ${mobile}`,
+        };
+      } else {
+        return rejectWithValue(response.data.message || "Failed to send OTP");
+      }
     } catch (error) {
       const axiosError = error as AxiosError<ErrorResponse>;
-    
       return rejectWithValue(
-        axiosError.response?.data?.message || "Failed to send WhatsApp OTP"
+        axiosError.response?.data?.message || "Error sending OTP"
       );
     }
   }
 );
+
+
+// export const sendOtpAdmin = createAsyncThunk(
+//   "auth/sendOtpAdmin",
+//   async ({ mobile }: SendOtpRequest, { rejectWithValue }) => {
+//     try {
+//       const response = await ngrokAxiosInstance.get<OtpResponse>("/auth/v1/sendOtpAdmin", {
+//         params: { mobile },
+//       });
+//       toast.success(response.data.message);
+//       return response.data;
+//     } catch (error) {
+//       const axiosError = error as AxiosError<ErrorResponse>;
+//       console.error("Send OTP error:", axiosError);
+//       toast.error("Failed to send OTP");
+//       return rejectWithValue(
+//         axiosError.response?.data?.message || "Failed to send OTP"
+//       );
+//     }
+//   }
+// );
+
+// export const sendWhatsapp = createAsyncThunk(
+//   "auth/sendWhatsapp",
+//   async ({ mobile, countryCode }: SendWhatsappRequest, { rejectWithValue }) => {
+//     try {
+//       const response = await ngrokAxiosInstance.post<WhatsappOtpResponse>(
+//         "/auth/v1/sendGallaboxOTP",
+//         {
+//           mobile,
+//           countryCode: countryCode?.replace("+", "") || "91",
+//         }
+//       );
+//       toast.success("WhatsApp OTP sent!");
+//       return response.data;
+//     } catch (error) {
+//       const axiosError = error as AxiosError<ErrorResponse>;
+
+//       return rejectWithValue(
+//         axiosError.response?.data?.message || "Failed to send WhatsApp OTP"
+//       );
+//     }
+//   }
+// );
 
 export const verifyOtpAdmin = createAsyncThunk(
   "auth/verifyOtpAdmin",
   async ({ mobile, otp }: VerifyOtpRequest, { rejectWithValue, dispatch, getState }) => {
+    console.log("verifyOtpAdmin params:", { mobile, otp });
     try {
-      const response = await ngrokAxiosInstance.post<OtpResponse>("/auth/v1/verifyOtpAdmin", {
-        mobile,
-        otp,
-      });
-      toast.success(response.data.message);
       const state = getState() as { auth: AuthState };
-      const userId = state.auth.tempUser?.user_id;
-      if (!userId) {
-        throw new Error("User ID not found in temporary state");
+      const storedOtp = state.auth.otp; 
+console.log("Stored OTP:", storedOtp);
+     
+      if (storedOtp && otp === storedOtp) {
+       let userDetails = localStorage.getItem("userDetails")
+       console.log("userDetails: ", userDetails);
+
+
+
+        const userId = state.auth.tempUser?.user_id;
+        if (!userId) {
+          throw new Error("User ID not found in temporary state");
+        }
+     
+        return { status: "success", message: "OTP verified successfully" };
       }
-      await dispatch(getProfile(userId)).unwrap();
-      return response.data;
+
+    
     } catch (error) {
       const axiosError = error as AxiosError<ErrorResponse> | Error;
       console.error("Verify OTP error:", axiosError);
@@ -393,60 +475,48 @@ const authSlice = createSlice({
       })
       .addCase(loginUser.fulfilled, (state, action) => {
         state.loading = false;
-        state.tempUser = {
-          user_id: action.payload.user.user_id,
-          mobile: action.payload.user.mobile,
-          name: action.payload.user.name,
-          user_type: action.payload.user.user_type,
-          email: action.payload.user.email || "",
-          state: action.payload.user.state || null,
-          city: action.payload.user.city || null,
-          pincode: action.payload.user.pincode || null,
-          status: action.payload.user.status ?? null,
-          created_userID: action.payload.user.created_userID ?? null,
-          created_by: action.payload.user.created_by || null,
-          photo: action.payload.user.photo || null,
-        };
+        state.tempUser = { ...action.payload };
         state.tempToken = action.payload.token;
       })
       .addCase(loginUser.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
       })
-      .addCase(sendOtpAdmin.pending, (state) => {
+      .addCase(sendUnifiedOtp.pending, (state) => {
         state.loading = true;
         state.error = null;
         state.isWhatsappFlow = false;
       })
-      .addCase(sendOtpAdmin.fulfilled, (state) => {
+      .addCase(sendUnifiedOtp.fulfilled, (state, action) => {
         state.loading = false;
         state.otpSent = true;
+        state.otp = action.payload.otp; // Store the decrypted OTP in state
       })
-      .addCase(sendOtpAdmin.rejected, (state, action) => {
+      .addCase(sendUnifiedOtp.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
         state.tempUser = null;
         state.tempToken = null;
         state.otp = null;
       })
-      .addCase(sendWhatsapp.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-        state.isWhatsappFlow = true;
-      })
-      .addCase(sendWhatsapp.fulfilled, (state, action) => {
-        state.loading = false;
-        state.otpSent = true;
-        state.otp = action.payload.otp ? action.payload.otp.toString() : null;
-      })
-      .addCase(sendWhatsapp.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload as string;
-        state.tempUser = null;
-        state.tempToken = null;
-        state.otp = null;
-        state.isWhatsappFlow = false;
-      })
+      // .addCase(sendWhatsapp.pending, (state) => {
+      //   state.loading = true;
+      //   state.error = null;
+      //   state.isWhatsappFlow = true;
+      // })
+      // .addCase(sendWhatsapp.fulfilled, (state, action) => {
+      //   state.loading = false;
+      //   state.otpSent = true;
+      //   state.otp = action.payload.otp ? action.payload.otp.toString() : null;
+      // })
+      // .addCase(sendWhatsapp.rejected, (state, action) => {
+      //   state.loading = false;
+      //   state.error = action.payload as string;
+      //   state.tempUser = null;
+      //   state.tempToken = null;
+      //   state.otp = null;
+      //   state.isWhatsappFlow = false;
+      // })
       .addCase(verifyOtpAdmin.pending, (state) => {
         state.loading = true;
         state.error = null;
