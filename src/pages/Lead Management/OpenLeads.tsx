@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { useNavigate, useParams } from "react-router";
-import { useSelector, useDispatch } from "react-redux";
 
+import { useSelector, useDispatch } from "react-redux";
+import toast from "react-hot-toast";
 import PageMeta from "../../components/common/PageMeta";
 import {
   Table,
@@ -12,13 +12,47 @@ import {
 } from "../../components/ui/table";
 import Button from "../../components/ui/button/Button";
 import { RootState, AppDispatch } from "../../store/store";
-import { Lead } from "../../types/LeadModel";
-import { clearLeads, getLeadsByUser } from "../../store/slices/leadslice";
-import toast from "react-hot-toast";
-import { BUILDER_USER_TYPE, sidebarSubItems } from "./CustomComponents";
-import UpdateLeadModal from "./UpdateLeadModel";
+import { clearLeads, getPropertyEnquiries } from "../../store/slices/leadslice";
 import FilterBar from "../../components/common/FilterBar";
 import PageBreadcrumbList from "../../components/common/PageBreadCrumbLists";
+import UpdateLeadModal from "./UpdateLeadModel";
+import { BUILDER_USER_TYPE, sidebarSubItems } from "./CustomComponents";
+import { useNavigate, useParams } from "react-router";
+
+interface PropertyEnquiry {
+  id: number;
+  unique_property_id: string;
+  fullname: string;
+  email: string | null;
+  mobile: string;
+  created_date: string;
+  updated_date: string;
+  created_time: string;
+  sent_status: number;
+  sub_type: string;
+  property_for: string;
+  property_type: string | null;
+  property_in: string;
+  state_id: string;
+  city_id: string;
+  location_id: string;
+  property_cost: string;
+  bedrooms: string;
+  bathroom: number;
+  facing: string;
+  car_parking: number;
+  bike_parking: number;
+  description: string;
+  image: string;
+  google_address: string;
+  property_name: string;
+  userDetails: {
+    id: number;
+    name: string;
+    email: string;
+    mobile: string;
+  };
+}
 
 const userTypeMap: { [key: number]: string } = {
   3: "Channel Partner",
@@ -28,19 +62,17 @@ const userTypeMap: { [key: number]: string } = {
   7: "Receptionists",
 };
 
-const LeadsType: React.FC = () => {
+const OpenLeads: React.FC = () => {
   const [localPage, setLocalPage] = useState<number>(1);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
   const [selectedLeadId, setSelectedLeadId] = useState<number | null>(null);
   const [statusUpdated, setStatusUpdated] = useState<boolean>(false);
-
   const [selectedUserType, setSelectedUserType] = useState<string | null>(null);
   const [createdDate, setCreatedDate] = useState<string | null>(null);
   const [updatedDate, setUpdatedDate] = useState<string | null>(null);
   const [selectedState, setSelectedState] = useState<string | null>(null);
   const [selectedCity, setSelectedCity] = useState<string | null>(null);
-
   const [selectedLeadIdSingle, setSelectedLeadIdSingle] = useState<
     number | null
   >(null);
@@ -51,12 +83,13 @@ const LeadsType: React.FC = () => {
   const { user, isAuthenticated } = useSelector(
     (state: RootState) => state.auth
   );
-  const { leads, loading, error } = useSelector(
+  const { openLeads, loading, error } = useSelector(
     (state: RootState) => state.lead
   );
 
   const isBuilder = user?.user_type === BUILDER_USER_TYPE;
-
+  const userId =
+    user?.id || parseInt(localStorage.getItem("userId") || "96", 10);
   const itemsPerPage = 10;
   const statusId = parseInt(status || "0", 10);
 
@@ -75,79 +108,36 @@ const LeadsType: React.FC = () => {
     []
   );
 
-  const leadsParams = useMemo(() => {
-    if (
-      !isAuthenticated ||
-      !user?.id ||
-      !user?.user_type ||
-      statusId < 0 ||
-      (!isBuilder &&
-        (!user?.created_user_id || user?.created_user_type === undefined))
-    ) {
-      return null;
-    }
-
-    const params = {
-      lead_added_user_id: isBuilder ? user.id : user.created_user_id!,
-      lead_added_user_type: isBuilder
-        ? user.user_type
-        : Number(user.created_user_type),
-      status_id: statusId,
-    };
-
-    if (!isBuilder) {
-      return {
-        ...params,
-        assigned_user_type: user.user_type,
-        assigned_id: user.id,
-      };
-    }
-
-    return params;
-  }, [isAuthenticated, user, statusId, isBuilder]);
-
   useEffect(() => {
-    if (leadsParams) {
-      dispatch(getLeadsByUser(leadsParams))
+    if (isAuthenticated && userId) {
+      dispatch(getPropertyEnquiries({ user_id: userId }))
         .unwrap()
-        .catch((err) => {});
-    } else if (isAuthenticated && user) {
-      console.warn("Invalid user data:", {
-        id: user.id,
-        user_type: user.user_type,
-        created_user_id: user.created_user_id,
-        created_user_type: user.created_user_type,
-        statusId,
-      });
+        .catch((err) => {
+          toast.error(err || "Failed to fetch property enquiries");
+        });
     }
     return () => {
       dispatch(clearLeads());
     };
-  }, [leadsParams, dispatch, statusUpdated]);
+  }, [isAuthenticated, userId, statusUpdated, dispatch]);
 
   const filteredLeads = useMemo(() => {
     return (
-      leads?.filter((item) => {
+      openLeads?.filter((item: PropertyEnquiry) => {
         const matchesSearch = !searchQuery
           ? true
-          : item.customer_name
+          : item.fullname.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            item.mobile.includes(searchQuery) ||
+            (item.email &&
+              item.email.toLowerCase().includes(searchQuery.toLowerCase())) ||
+            item.property_name
               .toLowerCase()
               .includes(searchQuery.toLowerCase()) ||
-            item.customer_phone_number.includes(searchQuery) ||
-            item.customer_email
-              .toLowerCase()
-              .includes(searchQuery.toLowerCase()) ||
-            item.interested_project_name
-              .toLowerCase()
-              .includes(searchQuery.toLowerCase()) ||
-            item.assigned_name
-              .toLowerCase()
-              .includes(searchQuery.toLowerCase()) ||
-            item.assigned_emp_number.includes(searchQuery);
+            item.sub_type.toLowerCase().includes(searchQuery.toLowerCase());
 
         const matchesUserType = !selectedUserType
           ? true
-          : item.assigned_user_type === parseInt(selectedUserType);
+          : item.userDetails.id.toString() === selectedUserType; // Assuming userDetails.id relates to user type
 
         const matchesCreatedDate = !createdDate
           ? true
@@ -155,23 +145,28 @@ const LeadsType: React.FC = () => {
 
         const matchesUpdatedDate = !updatedDate
           ? true
-          : item.updated_date?.split("T")[0] === updatedDate;
+          : item.updated_date.split("T")[0] === updatedDate;
+
+        const matchesState = !selectedState
+          ? true
+          : item.state_id.toLowerCase() === selectedState.toLowerCase();
 
         const matchesCity = !selectedCity
           ? true
-          : item.city?.toString() === selectedCity;
+          : item.city_id.toLowerCase() === selectedCity.toLowerCase();
 
         return (
           matchesSearch &&
           matchesUserType &&
           matchesCreatedDate &&
           matchesUpdatedDate &&
+          matchesState &&
           matchesCity
         );
       }) || []
     );
   }, [
-    leads,
+    openLeads,
     searchQuery,
     selectedUserType,
     createdDate,
@@ -187,13 +182,7 @@ const LeadsType: React.FC = () => {
     localPage * itemsPerPage
   );
 
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {};
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  const getPageTitle = () => sidebarItem?.name || "Leads";
+  const getPageTitle = () => sidebarItem?.name || "Property Enquiries";
 
   const handleSearch = (value: string) => {
     setSearchQuery(value.trim());
@@ -221,7 +210,7 @@ const LeadsType: React.FC = () => {
     return pages;
   };
 
-  const handleViewHistory = (item: Lead) => {
+  const handleViewHistory = (item: PropertyEnquiry) => {
     navigate("/leads/view", { state: { property: item } });
   };
 
@@ -236,7 +225,9 @@ const LeadsType: React.FC = () => {
   };
 
   const handleMarkAsBooked = (leadId: number) => {
-    const lead = currentLeads.find((item) => item.lead_id === leadId);
+    const lead = currentLeads.find(
+      (item: PropertyEnquiry) => item.id === leadId
+    );
     if (lead) {
       navigate(`/leads/book/${leadId}`, {
         state: {
@@ -245,11 +236,11 @@ const LeadsType: React.FC = () => {
           leadAddedUserType: isBuilder
             ? user!.user_type
             : Number(user!.created_user_type),
-          propertyId: lead.interested_project_id || 2,
+          propertyId: lead.id,
         },
       });
     } else {
-      toast.error("Lead not found");
+      toast.error("Enquiry not found");
     }
   };
 
@@ -300,7 +291,7 @@ const LeadsType: React.FC = () => {
 
   const handleBulkAssign = () => {
     if (selectedLeadIdSingle === null) {
-      toast.error("Please select a lead.");
+      toast.error("Please select an enquiry.");
       return;
     }
     handleLeadAssign(selectedLeadIdSingle);
@@ -308,18 +299,18 @@ const LeadsType: React.FC = () => {
 
   const handleBulkViewHistory = () => {
     if (selectedLeadIdSingle === null) {
-      toast.error("Please select a lead.");
+      toast.error("Please select an enquiry.");
       return;
     }
     const lead = currentLeads.find(
-      (item) => item.lead_id === selectedLeadIdSingle
+      (item: PropertyEnquiry) => item.id === selectedLeadIdSingle
     );
     if (lead) handleViewHistory(lead);
   };
 
   const handleBulkBookingDone = () => {
     if (selectedLeadIdSingle === null) {
-      toast.error("Please select a lead.");
+      toast.error("Please select an enquiry.");
       return;
     }
     handleMarkAsBooked(selectedLeadIdSingle);
@@ -327,7 +318,7 @@ const LeadsType: React.FC = () => {
 
   const handleBulkUpdateLead = () => {
     if (selectedLeadIdSingle === null) {
-      toast.error("Please select a lead.");
+      toast.error("Please select an enquiry.");
       return;
     }
     handleUpdateLead(selectedLeadIdSingle);
@@ -335,7 +326,7 @@ const LeadsType: React.FC = () => {
 
   return (
     <div className="relative min-h-screen">
-      <PageMeta title={`Lead Management - ${getPageTitle()}`} />
+      <PageMeta title={`Property Enquiries - ${getPageTitle()}`} />
 
       <FilterBar
         showUserTypeFilter={true}
@@ -361,7 +352,7 @@ const LeadsType: React.FC = () => {
       <div className="mb-4 flex gap-2">
         <PageBreadcrumbList
           pageTitle={getPageTitle()}
-          pagePlacHolder="Search by Name, Mobile, Email, Project"
+          pagePlacHolder="Search by Name, Mobile, Email, Project, Type"
           onFilter={handleSearch}
         />
         {isBuilder ? (
@@ -372,7 +363,7 @@ const LeadsType: React.FC = () => {
               disabled={selectedLeadIdSingle === null}
               className="px-4 py-1 h-10"
             >
-              Assign Lead
+              Assign Enquiry
             </Button>
             <Button
               variant="primary"
@@ -383,14 +374,7 @@ const LeadsType: React.FC = () => {
             >
               View History
             </Button>
-            <Button
-              variant="primary"
-              onClick={handleBulkBookingDone}
-              disabled={selectedLeadIdSingle === null}
-              className="px-4 py-2 h-10"
-            >
-              Booking Done
-            </Button>
+        
           </>
         ) : (
           <>
@@ -400,7 +384,7 @@ const LeadsType: React.FC = () => {
               disabled={selectedLeadIdSingle === null}
               className="px-4 py-2 h-10"
             >
-              Update Lead
+              Update Enquiry
             </Button>
             <Button
               variant="primary"
@@ -417,118 +401,134 @@ const LeadsType: React.FC = () => {
       <div className="space-y-6">
         {loading && (
           <div className="text-center text-gray-600 dark:text-gray-400 py-4">
-            Loading leads...
+            Loading enquiries...
           </div>
         )}
         {error && <div className="text-center text-red-500 py-4">{error}</div>}
         {!loading && !error && filteredLeads.length === 0 && (
           <div className="text-center text-gray-600 dark:text-gray-400 py-4">
-            No leads found.
+            No enquiries found.
           </div>
         )}
         {!loading && !error && filteredLeads.length > 0 && (
           <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03]">
             <div className="w-full overflow-x-auto">
               <Table className="w-full">
-                <TableHeader className="border-b border-gray-100 dark:border-white/[0.05]">
-                  <TableRow className="bg-blue-900 text-white">
+                <TableHeader className="border-b border-gray-100 dark:border-white/[0.05] bg-blue-900 text-white">
+                  <TableRow>
                     <TableCell
                       isHeader
-                      className="text-center font-medium text-xs whitespace-nowrap"
+                      className="text-center font-medium text-xs whitespace-nowrap w-[5%]"
                     >
                       Select
                     </TableCell>
                     <TableCell
                       isHeader
-                      className="text-left font-medium text-xs whitespace-nowrap"
+                      className="text-left font-medium text-xs whitespace-nowrap w-[15%]"
                     >
                       Name
                     </TableCell>
                     <TableCell
                       isHeader
-                      className="text-left font-medium text-xs whitespace-nowrap"
+                      className="text-left font-medium text-xs whitespace-nowrap w-[15%]"
                     >
-                      Number
+                      Mobile
                     </TableCell>
                     <TableCell
                       isHeader
-                      className="text-left font-medium text-xs whitespace-nowrap"
+                      className="text-left font-medium text-xs whitespace-nowrap w-[15%]"
+                    >
+                      Email
+                    </TableCell>
+                    <TableCell
+                      isHeader
+                      className="text-left font-medium text-xs whitespace-nowrap w-[15%]"
                     >
                       Project
                     </TableCell>
                     <TableCell
                       isHeader
-                      className="text-left font-medium text-xs whitespace-nowrap"
+                      className="text-left font-medium text-xs whitespace-nowrap w-[10%]"
                     >
-                      Lead Type
+                      Type
                     </TableCell>
                     <TableCell
                       isHeader
-                      className="text-left font-medium text-xs whitespace-nowrap"
+                      className="text-left font-medium text-xs whitespace-nowrap w-[10%]"
                     >
-                      Created
+                      For
                     </TableCell>
                     <TableCell
                       isHeader
-                      className="text-left font-medium text-xs whitespace-nowrap"
-                    >
-                      Updated
-                    </TableCell>
-                    <TableCell
-                      isHeader
-                      className="text-left font-medium text-xs whitespace-nowrap"
-                    >
-                      Assigned
-                    </TableCell>
-                    <TableCell
-                      isHeader
-                      className="text-left font-medium text-xs whitespace-nowrap"
+                      className="text-left font-medium text-xs whitespace-nowrap w-[10%]"
                     >
                       City
+                    </TableCell>
+                    <TableCell
+                      isHeader
+                      className="text-left font-medium text-xs whitespace-nowrap w-[10%]"
+                    >
+                      State
+                    </TableCell>
+                    <TableCell
+                      isHeader
+                      className="text-left font-medium text-xs whitespace-nowrap w-[10%]"
+                    >
+                      Cost
                     </TableCell>
                   </TableRow>
                 </TableHeader>
                 <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
-                  {currentLeads.map((item, index) => (
+                  {currentLeads.map((item: PropertyEnquiry) => (
                     <TableRow
-                      key={item.lead_id}
+                      key={item.id}
                       className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                     >
                       <TableCell className="text-center">
                         <input
                           type="checkbox"
-                          checked={selectedLeadIdSingle === item.lead_id}
-                          onChange={() => handleCheckboxChange(item.lead_id)}
+                          checked={selectedLeadIdSingle === item.id}
+                          onChange={() => handleCheckboxChange(item.id)}
                           className="h-3 w-3 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                         />
                       </TableCell>
                       <TableCell className="text-left truncate max-w-[120px]">
-                        <span title={item.customer_name || "N/A"}>
-                          {item.customer_name || "N/A"}
+                        <span title={item.fullname || "N/A"}>
+                          {item.fullname || "N/A"}
                         </span>
                       </TableCell>
                       <TableCell className="text-left">
-                        {item.customer_phone_number || "N/A"}
+                        {item.mobile || "N/A"}
                       </TableCell>
                       <TableCell className="text-left truncate max-w-[120px]">
-                        <span title={item.interested_project_name || "N/A"}>
-                          {item.interested_project_name || "N/A"}
+                        <span
+                          title={item.email || item.userDetails.email || "N/A"}
+                        >
+                          {item.email || item.userDetails.email || "N/A"}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-left truncate max-w-[120px]">
+                        <span title={item.property_name || "N/A"}>
+                          {item.property_name || "N/A"}
                         </span>
                       </TableCell>
                       <TableCell className="text-left">
-                        {item.status_name || "N/A"}
+                        {item.sub_type || "N/A"}
                       </TableCell>
                       <TableCell className="text-left">
-                        {item.created_date?.split("T")[0] || "N/A"}
+                        {item.property_for || "N/A"}
                       </TableCell>
                       <TableCell className="text-left">
-                        {item.updated_date?.split("T")[0] || "N/A"}
+                        {item.city_id || "N/A"}
                       </TableCell>
                       <TableCell className="text-left">
-                        {userTypeMap[item.assigned_user_type] || "N/A"}
+                        {item.state_id || "N/A"}
                       </TableCell>
                       <TableCell className="text-left">
-                        {item.city || "N/A"}
+                        {Number(item.property_cost).toLocaleString("en-IN", {
+                          style: "currency",
+                          currency: "INR",
+                        }) || "N/A"}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -587,4 +587,4 @@ const LeadsType: React.FC = () => {
   );
 };
 
-export default LeadsType;
+export default OpenLeads;

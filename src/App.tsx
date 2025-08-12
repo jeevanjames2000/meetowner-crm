@@ -21,6 +21,7 @@ import AssignLeadEmployeePage from "./pages/Lead Management/AssignLeadToEmployee
 import MarkBookingPage from "./pages/Lead Management/MarkBookingDone";
 import AllCpLeadDetails from "./pages/Lead Management/CpLeads";
 import EmpLeads from "./pages/Lead Management/EmpLeads";
+import OpenLeads from "./pages/Lead Management/OpenLeads";
 const LeadsType = lazy(() => import("./pages/Lead Management/LeadsType"));
 
 export default function App() {
@@ -39,6 +40,8 @@ export default function App() {
               <Route index path="/" element={<Home />} />
 
               <Route path="/leads/:lead_in/:status" element={<LeadsType />} />
+              <Route path="/openLeads" element={<OpenLeads />} />
+
               <Route path="/leads/addlead" element={<AddNewLead />} />
               <Route path="/leads/view" element={<ViewLeadDetails />} />
 

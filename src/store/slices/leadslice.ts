@@ -6,6 +6,7 @@ import { ErrorResponse, Lead, LeadsResponse, LeadUpdate, LeadUpdatesResponse, Le
 
 const initialState: LeadState = {
   leads: null,
+  openLeads:null,
   cpLeads: null,
   leadUpdates: null,
   bookedLeads: null,
@@ -14,6 +15,97 @@ const initialState: LeadState = {
   loading: false,
   error: null,
 };
+interface PropertyEnquiry {
+  id: number;
+  unique_property_id: string;
+  fullname: string;
+  email: string | null;
+  mobile: string;
+  created_date: string;
+  updated_date: string;
+  created_time: string;
+  sent_status: number;
+  sub_type: string;
+  property_for: string;
+  property_type: string | null;
+  property_in: string;
+  state_id: string;
+  city_id: string;
+  location_id: string;
+  property_cost: string;
+  bedrooms: string;
+  bathroom: number;
+  facing: string;
+  car_parking: number;
+  bike_parking: number;
+  description: string;
+  image: string;
+  google_address: string;
+  property_name: string;
+  userDetails: {
+    id: number;
+    name: string;
+    email: string;
+    mobile: string;
+  };
+}
+
+export const getPropertyEnquiries = createAsyncThunk<
+  PropertyEnquiry[],
+  { user_id: number },
+  { rejectValue: string }
+>(
+  "lead/getPropertyEnquiries",
+  async ({ user_id }, { rejectWithValue }) => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        return rejectWithValue("No authentication token found. Please log in.");
+      }
+
+      const response = await ngrokAxiosInstance.get<{
+        count: number;
+        formattedResults: PropertyEnquiry[];
+      }>(`/enquiry/v1/getPropertyEnquiries?user_id=${user_id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (
+        !response.data.formattedResults ||
+        response.data.formattedResults.length === 0
+      ) {
+        return rejectWithValue("No property enquiries found");
+      }
+
+      return response.data.formattedResults;
+    } catch (error) {
+      const axiosError = error as AxiosError<ErrorResponse>;
+      console.error("Get property enquiries error:", axiosError);
+      if (axiosError.response) {
+        const status = axiosError.response.status;
+        switch (status) {
+          case 401:
+            return rejectWithValue("Unauthorized: Invalid or expired token");
+          case 404:
+            return rejectWithValue("No property enquiries found for this user");
+          case 500:
+            return rejectWithValue("Server error. Please try again later.");
+          default:
+            return rejectWithValue(
+              axiosError.response.data?.message ||
+                "Failed to fetch property enquiries"
+            );
+        }
+      }
+      return rejectWithValue(
+        "Network error. Please check your connection and try again."
+      );
+    }
+  }
+);
+
 
 export const getLeadsByUser = createAsyncThunk<
   Lead[],
@@ -42,7 +134,7 @@ export const getLeadsByUser = createAsyncThunk<
         lead_added_user_id: lead_added_user_id.toString(),
         ...(assigned_user_type && { assigned_user_type: assigned_user_type.toString() }),
         ...(assigned_id && { assigned_id: assigned_id.toString() }),
-        ...(status_id !== undefined && { status_id: status_id.toString() }), // Conditionally include status_id
+        ...(status_id !== undefined && { status_id: status_id.toString() }), 
       });
 
       const response = await ngrokAxiosInstance.get<LeadsResponse>(
@@ -286,7 +378,7 @@ export const getLeadStatuses = createAsyncThunk<
       }
 
       const response = await ngrokAxiosInstance.get<LeadStatusResponse>(
-        `/api/v1/leads/leadstatus`,
+        `/meetCRM/v2/leads/getAllLeadStatuses`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -294,11 +386,11 @@ export const getLeadStatuses = createAsyncThunk<
         }
       );
 
-      if (!response.data.results || response.data.results.length === 0) {
+      if (!response.data || response.data.length === 0) {
         return rejectWithValue("No lead statuses found");
       }
 
-      return response.data.results;
+      return response.data;
     } catch (error) {
       const axiosError = error as AxiosError<ErrorResponse>;
       console.error("Get lead statuses error:", axiosError);
@@ -697,7 +789,19 @@ const leadSlice = createSlice({
     },
   },
   extraReducers: (builder) => {
-    builder
+    builder  
+     .addCase(getPropertyEnquiries.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(getPropertyEnquiries.fulfilled, (state, action) => {
+        state.loading = false;
+        state.openLeads = action.payload;
+      })
+      .addCase(getPropertyEnquiries.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
       .addCase(getLeadsByUser.pending, (state) => {
         state.loading = true;
         state.error = null;

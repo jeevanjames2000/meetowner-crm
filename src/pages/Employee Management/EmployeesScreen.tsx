@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-
 import { useSelector, useDispatch } from "react-redux";
 import toast from "react-hot-toast";
 import {
@@ -25,8 +24,6 @@ import ConfirmDeleteUserModal from "../../components/common/ConfirmDeleteUserMod
 import { usePropertyQueries } from "../../hooks/PropertyQueries";
 import { setCityDetails } from "../../store/slices/propertyDetails";
 import { Link, useNavigate, useParams } from "react-router";
-
-// Mock API data
 const mockUsers = [
   {
     id: 4,
@@ -46,19 +43,16 @@ const mockUsers = [
     created_time: "12:28:51",
   },
 ];
-
 const userTypeMap: { [key: number]: string } = {
   4: "Sales Manager",
   5: "Telecallers",
   6: "Marketing Executors",
   7: "Receptionists",
 };
-
 const formatDate = (dateString: string): string => {
   const date = new Date(dateString);
   return date.toISOString().split("T")[0];
 };
-
 export default function EmployeesScreen() {
   const { status } = useParams<{ status: string }>();
   const navigate = useNavigate();
@@ -66,9 +60,11 @@ export default function EmployeesScreen() {
   const { user, isAuthenticated } = useSelector(
     (state: RootState) => state.auth
   );
+  console.log("user: ", localStorage.getItem("userDetails"));
   const { users, loading, error } = useSelector(
     (state: RootState) => state.user
   );
+
   const { states } = useSelector((state: RootState) => state.property);
   const { citiesQuery } = usePropertyQueries();
   const [filterValue, setFilterValue] = useState<string>("");
@@ -85,17 +81,14 @@ export default function EmployeesScreen() {
   const itemsPerPage = 10;
   const empUserType = Number(status);
   const categoryLabel = userTypeMap[empUserType] || "Employees";
-
   const citiesResult = citiesQuery(
     selectedState ? parseInt(selectedState) : undefined
   );
-
   useEffect(() => {
     if (citiesResult.data) {
       dispatch(setCityDetails(citiesResult.data));
     }
   }, [citiesResult.data, dispatch]);
-
   useEffect(() => {
     if (citiesResult.isError) {
       toast.error(
@@ -105,12 +98,8 @@ export default function EmployeesScreen() {
       );
     }
   }, [citiesResult.isError, citiesResult.error]);
-
-  // Use mock data instead of fetching from API for this example
   useEffect(() => {
     if (isAuthenticated && user?.id && empUserType) {
-      // Simulate fetching users by setting mock data to state
-      // In a real scenario, replace this with dispatch(getUsersByType(...))
       dispatch({
         type: "user/getUsersByType/fulfilled",
         payload: mockUsers.filter((u) => u.user_type === empUserType),
@@ -120,7 +109,6 @@ export default function EmployeesScreen() {
       dispatch(clearUsers());
     };
   }, [isAuthenticated, user, empUserType, statusUpdated, dispatch]);
-
   const filteredUsers =
     users?.filter((user) => {
       const matchesTextFilter = [
@@ -129,7 +117,7 @@ export default function EmployeesScreen() {
         user.email,
         user.city,
         user.state,
-        user.pincode, // Added pincode to filterable fields
+        user.pincode,
       ]
         .map((field) => field?.toLowerCase() || "")
         .some((field) => field.includes(filterValue.toLowerCase()));
@@ -153,19 +141,16 @@ export default function EmployeesScreen() {
         matchesTextFilter && matchesCreatedDate && matchesState && matchesCity
       );
     }) || [];
-
   const totalItems = filteredUsers.length;
   const totalPages = Math.ceil(totalItems / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
   const paginatedUsers = filteredUsers.slice(startIndex, endIndex);
-
   const handleViewProfile = (id: number) => {
     if (isAuthenticated && user?.id && empUserType) {
       navigate(`/employeedetails/${empUserType}/${id}`);
     }
   };
-
   const handleConfirmDelete = async () => {
     if (selectedUser && user?.user_type) {
       try {
@@ -187,38 +172,31 @@ export default function EmployeesScreen() {
       }
     }
   };
-
   const handleCancelDelete = () => {
     setIsDeleteModalOpen(false);
     setSelectedUser(null);
   };
-
   const handleFilter = (value: string) => {
     setFilterValue(value);
     setCurrentPage(1);
   };
-
   const handleCreatedDateChange = (date: string | null) => {
     setCreatedDate(date);
     setCurrentPage(1);
   };
-
   const handleCreatedEndDateChange = (date: string | null) => {
     setCreatedEndDate(date);
     setCurrentPage(1);
   };
-
   const handleStateChange = (value: string | null) => {
     setSelectedState(value);
     setSelectedCity(null);
     setCurrentPage(1);
   };
-
   const handleCityChange = (value: string | null) => {
     setSelectedCity(value);
     setCurrentPage(1);
   };
-
   const handleClearFilters = () => {
     setFilterValue("");
     setCreatedDate(null);
@@ -227,11 +205,9 @@ export default function EmployeesScreen() {
     setSelectedCity(null);
     setCurrentPage(1);
   };
-
   const handleCheckboxChange = (userId: number) => {
     setSelectedUserId((prev) => (prev === userId ? null : userId));
   };
-
   const handleBulkViewProfile = () => {
     if (selectedUserId === null) {
       toast.error("Please select an employee.");
@@ -239,7 +215,6 @@ export default function EmployeesScreen() {
     }
     handleViewProfile(selectedUserId);
   };
-
   const handleBulkDelete = () => {
     if (selectedUserId === null) {
       toast.error("Please select an employee.");
@@ -251,7 +226,6 @@ export default function EmployeesScreen() {
       setIsDeleteModalOpen(true);
     }
   };
-
   return (
     <div className="relative min-h-screen">
       <FilterBar
@@ -383,7 +357,7 @@ export default function EmployeesScreen() {
                 <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
                   {paginatedUsers.map((user) => {
                     const { text: statusText, className: statusClass } =
-                      getStatusDisplay(user.status || "active"); // Default to 'active' if status is undefined
+                      getStatusDisplay(user.status || "active");
                     return (
                       <TableRow
                         key={user.id}

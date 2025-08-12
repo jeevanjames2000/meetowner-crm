@@ -9,18 +9,14 @@ interface LoginRequest {
   isWhatsapp?: boolean;
   countryCode?: string;
 }
-
 interface SendOtpRequest {
   mobile: string;
   decryptedOtp?: string | null
-
 }
-
 interface SendWhatsappRequest {
   mobile: string;
   countryCode?: string;
 }
-
 interface WhatsappOtpResponse {
   success: boolean;
   data: {
@@ -30,12 +26,10 @@ interface WhatsappOtpResponse {
   };
   otp: number;
 }
-
 interface VerifyOtpRequest {
   mobile: string;
   otp: string;
 }
-
 interface User {
   user_id: number;
   mobile: string;
@@ -62,7 +56,6 @@ interface User {
   from_app?: number | null;
   uploaded_from_seller_panel?: string | null;
 }
-
 interface ProfileResponse {
   id: number;
   mobile: string;
@@ -89,23 +82,19 @@ interface ProfileResponse {
   from_app?: number | null;
   uploaded_from_seller_panel?: string | null;
 }
-
 interface LoginResponse {
   message: string;
   user: User;
   token: string;
 }
-
 interface OtpResponse {
   status: string;
   message: string;
   apiResponse?: any;
 }
-
 interface ErrorResponse {
   message?: string;
 }
-
 export interface AuthState {
   isAuthenticated: boolean;
   user: User | null;
@@ -120,34 +109,26 @@ export interface AuthState {
   otp: string | null;
   isWhatsappFlow: boolean;
 }
-
 interface DecodedToken {
   exp: number;
   [key: string]: any;
 }
-
 interface UserCount {
   user_type: string;
   count: number;
   trend?: "up" | "down";
   percentage?: number;
 }
-
-
-
 const JWT_SECRET = "khsfskhfks983493123!@#JSFKORuiweo232";
 export const OTP_LENGTH = 4;
 export const RESEND_COOLDOWN = 30;
-
 export function decrypt(encryptedText: string): string | null {
   try {
     const [ivHex, encryptedHex] = encryptedText.split(":");
     if (!ivHex || !encryptedHex) return null;
-
     const iv = CryptoJS.enc.Hex.parse(ivHex);
     const encrypted = CryptoJS.enc.Hex.parse(encryptedHex);
     const key = CryptoJS.SHA256(JWT_SECRET);
-
     const decrypted = CryptoJS.AES.decrypt(
       { ciphertext: encrypted } as CryptoJS.lib.CipherParams,
       key,
@@ -157,14 +138,12 @@ export function decrypt(encryptedText: string): string | null {
         padding: CryptoJS.pad.Pkcs7,
       }
     );
-
     const result = decrypted.toString(CryptoJS.enc.Utf8);
     return result || null;
   } catch {
     return null;
   }
 }
-
 export const loginUser = createAsyncThunk(
   "auth/loginUser",
   async (credentials: LoginRequest, { rejectWithValue, dispatch }) => {
@@ -181,12 +160,8 @@ export const loginUser = createAsyncThunk(
       console.log(
         "Login response:", response.data.user_details
       )
-
       await dispatch(sendUnifiedOtp({ mobile: credentials.mobile })).unwrap();
-
       return response.data.user_details
-
-
     } catch (error) {
       const axiosError = error as AxiosError<ErrorResponse>;
       console.error("Login error:", axiosError);
@@ -221,15 +196,12 @@ export const sendUnifiedOtp = createAsyncThunk(
         { mobile, countryCode: "91" },
         { headers: { "Content-Type": "application/json" } }
       );
-
       if (response.data.status === "success") {
         const otp = response.data?.otp || null;
-
-        // Decrypt if available
         let decryptedOtp: string | null = null;
         if (otp) {
           try {
-            decryptedOtp = decrypt(otp); // Decrypt the OTP
+            decryptedOtp = decrypt(otp);
             if (!decryptedOtp) {
               return rejectWithValue("Failed to decrypt OTP");
             }
@@ -237,9 +209,8 @@ export const sendUnifiedOtp = createAsyncThunk(
             return rejectWithValue("Failed to decrypt OTP");
           }
         }
-
         return {
-          otp: decryptedOtp, // Store decrypted OTP
+          otp: decryptedOtp,
           message: `OTP sent to ${mobile}`,
         };
       } else {
@@ -253,51 +224,6 @@ export const sendUnifiedOtp = createAsyncThunk(
     }
   }
 );
-
-
-// export const sendOtpAdmin = createAsyncThunk(
-//   "auth/sendOtpAdmin",
-//   async ({ mobile }: SendOtpRequest, { rejectWithValue }) => {
-//     try {
-//       const response = await ngrokAxiosInstance.get<OtpResponse>("/auth/v1/sendOtpAdmin", {
-//         params: { mobile },
-//       });
-//       toast.success(response.data.message);
-//       return response.data;
-//     } catch (error) {
-//       const axiosError = error as AxiosError<ErrorResponse>;
-//       console.error("Send OTP error:", axiosError);
-//       toast.error("Failed to send OTP");
-//       return rejectWithValue(
-//         axiosError.response?.data?.message || "Failed to send OTP"
-//       );
-//     }
-//   }
-// );
-
-// export const sendWhatsapp = createAsyncThunk(
-//   "auth/sendWhatsapp",
-//   async ({ mobile, countryCode }: SendWhatsappRequest, { rejectWithValue }) => {
-//     try {
-//       const response = await ngrokAxiosInstance.post<WhatsappOtpResponse>(
-//         "/auth/v1/sendGallaboxOTP",
-//         {
-//           mobile,
-//           countryCode: countryCode?.replace("+", "") || "91",
-//         }
-//       );
-//       toast.success("WhatsApp OTP sent!");
-//       return response.data;
-//     } catch (error) {
-//       const axiosError = error as AxiosError<ErrorResponse>;
-
-//       return rejectWithValue(
-//         axiosError.response?.data?.message || "Failed to send WhatsApp OTP"
-//       );
-//     }
-//   }
-// );
-
 export const verifyOtpAdmin = createAsyncThunk(
   "auth/verifyOtpAdmin",
   async ({ mobile, otp }: VerifyOtpRequest, { rejectWithValue, dispatch, getState }) => {
@@ -305,23 +231,15 @@ export const verifyOtpAdmin = createAsyncThunk(
     try {
       const state = getState() as { auth: AuthState };
       const storedOtp = state.auth.otp; 
-console.log("Stored OTP:", storedOtp);
-     
       if (storedOtp && otp === storedOtp) {
-       let userDetails = localStorage.getItem("userDetails")
+       const userDetails = state.auth.tempUser
        console.log("userDetails: ", userDetails);
-
-
-
         const userId = state.auth.tempUser?.user_id;
         if (!userId) {
           throw new Error("User ID not found in temporary state");
         }
-     
         return { status: "success", message: "OTP verified successfully" };
       }
-
-    
     } catch (error) {
       const axiosError = error as AxiosError<ErrorResponse> | Error;
       console.error("Verify OTP error:", axiosError);
@@ -338,9 +256,7 @@ console.log("Stored OTP:", storedOtp);
     }
   }
 );
-
 export const verifyWhatsappOtpLocally = createAction<{ otp: string }>("auth/verifyWhatsappOtpLocally");
-
 export const getProfile = createAsyncThunk(
   "auth/getProfile",
   async (user_id: number, { rejectWithValue }) => {
@@ -374,7 +290,6 @@ export const getProfile = createAsyncThunk(
     }
   }
 );
-
 export const getAllUsersCount = createAsyncThunk(
   "auth/getAllUsersCount",
   async (_, { rejectWithValue }) => {
@@ -396,7 +311,6 @@ export const getAllUsersCount = createAsyncThunk(
     }
   }
 );
-
 const authSlice = createSlice({
   name: "auth",
   initialState: {
@@ -445,27 +359,7 @@ const authSlice = createSlice({
       state.otp = null;
       state.isWhatsappFlow = false;
     },
-    verifyWhatsappOtpLocally: (state, action) => {
-      const { otp } = action.payload;
-      if (state.otp && otp === state.otp) {
-        state.otpVerified = true;
-        state.isAuthenticated = true;
-        state.user = state.tempUser;
-        state.token = state.tempToken;
-        state.error = null;
-        if (state.tempUser && state.tempToken) {
-          localStorage.setItem("token", state.tempToken);
-          localStorage.setItem("name", state.tempUser.name);
-          localStorage.setItem("userType", state.tempUser.user_type.toString());
-          localStorage.setItem("email", state.tempUser.email || "");
-          localStorage.setItem("mobile", state.tempUser.mobile);
-          localStorage.setItem("city", state.tempUser.city || "");
-          localStorage.setItem("state", state.tempUser.state || "");
-          localStorage.setItem("userId", state.tempUser.user_id.toString());
-          localStorage.setItem("photo", state.tempUser.photo || "");
-        }
-      }
-    },
+   
   },
   extraReducers: (builder) => {
     builder
@@ -490,7 +384,7 @@ const authSlice = createSlice({
       .addCase(sendUnifiedOtp.fulfilled, (state, action) => {
         state.loading = false;
         state.otpSent = true;
-        state.otp = action.payload.otp; // Store the decrypted OTP in state
+        state.otp = action.payload.otp;
       })
       .addCase(sendUnifiedOtp.rejected, (state, action) => {
         state.loading = false;
@@ -499,24 +393,6 @@ const authSlice = createSlice({
         state.tempToken = null;
         state.otp = null;
       })
-      // .addCase(sendWhatsapp.pending, (state) => {
-      //   state.loading = true;
-      //   state.error = null;
-      //   state.isWhatsappFlow = true;
-      // })
-      // .addCase(sendWhatsapp.fulfilled, (state, action) => {
-      //   state.loading = false;
-      //   state.otpSent = true;
-      //   state.otp = action.payload.otp ? action.payload.otp.toString() : null;
-      // })
-      // .addCase(sendWhatsapp.rejected, (state, action) => {
-      //   state.loading = false;
-      //   state.error = action.payload as string;
-      //   state.tempUser = null;
-      //   state.tempToken = null;
-      //   state.otp = null;
-      //   state.isWhatsappFlow = false;
-      // })
       .addCase(verifyOtpAdmin.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -527,17 +403,9 @@ const authSlice = createSlice({
         state.isAuthenticated = true;
         state.user = state.tempUser;
         state.token = state.tempToken;
-        if (state.tempUser && state.tempToken) {
-          localStorage.setItem("token", state.tempToken);
-          localStorage.setItem("name", state.tempUser.name);
-          localStorage.setItem("userType", state.tempUser.user_type.toString());
-          localStorage.setItem("email", state.tempUser.email || "");
-          localStorage.setItem("mobile", state.tempUser.mobile);
-          localStorage.setItem("city", state.tempUser.city || "");
-          localStorage.setItem("state", state.tempUser.state || "");
-          localStorage.setItem("userId", state.tempUser.user_id.toString());
-          localStorage.setItem("photo", state.tempUser.photo || "");
-        }
+        localStorage.setItem("userDetails",JSON.stringify(state.tempUser))
+        localStorage.setItem("token",state.tempUser.token)
+       
       })
       .addCase(verifyOtpAdmin.rejected, (state, action) => {
         state.loading = false;
@@ -613,7 +481,6 @@ const authSlice = createSlice({
       });
   },
 });
-
 export const isTokenExpired = (token: string | null): boolean => {
   if (!token) return true;
   try {
@@ -625,6 +492,5 @@ export const isTokenExpired = (token: string | null): boolean => {
     return true;
   }
 };
-
 export const { logout, resetOtpState } = authSlice.actions;
 export default authSlice.reducer;

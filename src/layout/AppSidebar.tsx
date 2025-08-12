@@ -31,7 +31,7 @@ const navItems: NavItem[] = [
       },
       {
         name: "Open Leads",
-        path: "/leads/open/1",
+        path: "openLeads",
         data: { lead_in: "Open", status: 1 },
       },
       {

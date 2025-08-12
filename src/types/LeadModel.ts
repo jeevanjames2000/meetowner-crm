@@ -56,6 +56,41 @@ export interface Lead {
   state?:string | null;
   city?:string | null;
 }
+export interface OpenLead{
+  
+  id: number;
+  unique_property_id: string;
+  fullname: string;
+  email: string | null;
+  mobile: string;
+  created_date: string;
+  updated_date: string;
+  created_time: string;
+  sent_status: number;
+  sub_type: string;
+  property_for: string;
+  property_type: string | null;
+  property_in: string;
+  state_id: string;
+  city_id: string;
+  location_id: string;
+  property_cost: string;
+  bedrooms: string;
+  bathroom: number;
+  facing: string;
+  car_parking: number;
+  bike_parking: number;
+  description: string;
+  image: string;
+  google_address: string;
+  property_name: string;
+  userDetails: {
+    id: number;
+    name: string;
+    email: string;
+    mobile: string;
+  };
+}
 
 export interface LeadUpdate {
   update_id: number;
@@ -90,8 +125,8 @@ export interface LeadStatus {
 }
 
 export interface LeadStatusResponse {
-  status: string;
-  results: LeadStatus[];
+  status_id: number;
+  status_name:string;
 }
 
 export interface LeadSource {
@@ -108,6 +143,7 @@ export interface LeadSourceResponse {
 
 export interface LeadState {
   leads: Lead[] | null;
+  openLeads:OpenLead[] | null
   leadUpdates: LeadUpdate[] | null;
   bookedLeads: Lead[] | null;
   leadStatuses: LeadStatus[] | null;

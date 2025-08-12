@@ -1,5 +1,5 @@
-import { useEffect, useMemo } from "react";
-import { useSelector, useDispatch } from "react-redux";
+import { useMemo } from "react";
+import { useSelector } from "react-redux";
 import { Link } from "react-router";
 import {
   UserPlus,
@@ -9,10 +9,7 @@ import {
   CircleUser,
   UserRound,
 } from "lucide-react";
-import { AppDispatch, RootState } from "../../store/store";
-import { getTypesCount } from "../../store/slices/userslice";
-import toast from "react-hot-toast";
-
+import { RootState } from "../../store/store";
 const userTypeMap = {
   new_leads: "Total Leads",
   today_leads: "Today Leads",
@@ -23,7 +20,6 @@ const userTypeMap = {
   "6": "Marketing Agent",
   "7": "Receptionists",
 };
-
 const userTypeRoutes = {
   new_leads: "/leads/new/0",
   today_leads: "/leads/today/2",
@@ -34,7 +30,6 @@ const userTypeRoutes = {
   "6": "/employee/6",
   "7": "/employee/7",
 };
-
 const iconMap = {
   new_leads: UserPlus,
   today_leads: Clock,
@@ -45,7 +40,6 @@ const iconMap = {
   "6": CircleUser,
   "7": UserRound,
 };
-
 const cardColors = [
   "from-blue-500/10 to-cyan-500/10 border-blue-200/50",
   "from-purple-500/10 to-pink-500/10 border-purple-200/50",
@@ -53,7 +47,6 @@ const cardColors = [
   "from-orange-500/10 to-red-500/10 border-orange-200/50",
   "from-indigo-500/10 to-blue-500/10 border-indigo-200/50",
 ];
-
 const iconBgColors = [
   "bg-gradient-to-br from-blue-500 to-cyan-600",
   "bg-gradient-to-br from-purple-500 to-pink-600",
@@ -61,38 +54,14 @@ const iconBgColors = [
   "bg-gradient-to-br from-orange-500 to-red-600",
   "bg-gradient-to-br from-indigo-500 to-blue-600",
 ];
-
 const BUILDER_USER_TYPE = 2;
-
 export default function Home() {
-  const dispatch = useDispatch<AppDispatch>();
   const { user, isAuthenticated } = useSelector(
     (state: RootState) => state.auth
   );
   const { userCounts, loading, error } = useSelector(
     (state: RootState) => state.user
   );
-
-  const typesCountParams = useMemo(() => {
-    if (!isAuthenticated || !user?.id) return null;
-
-    return {
-      admin_user_id: user.id,
-      admin_user_type: user.user_type,
-    };
-  }, [isAuthenticated, user]);
-
-  useEffect(() => {
-    if (typesCountParams) {
-      dispatch(getTypesCount(typesCountParams))
-        .unwrap()
-        .catch((err) => {
-          toast.error(err || "Failed to fetch counts");
-        });
-    }
-  }, [typesCountParams, dispatch]);
-
-  // Define allowed user types
   const allowedUserTypes = [
     "new_leads",
     "today_leads",
@@ -103,18 +72,15 @@ export default function Home() {
     "6",
     "7",
   ];
-
-  // Create a complete list of counts, including placeholders for missing user types
   const filteredCounts = useMemo(() => {
-    console.log("userCounts:", userCounts); // Debug log
+    console.log("userCounts:", userCounts);
     const counts = allowedUserTypes.map((userType) => {
       const found = userCounts?.find((item) => item.user_type === userType);
       return found || { user_type: userType, count: 0 };
     });
-    console.log("filteredCounts:", counts); // Debug log
+    console.log("filteredCounts:", counts);
     return counts;
   }, [userCounts]);
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50 p-6">
       <div className="mb-8">
@@ -128,18 +94,15 @@ export default function Home() {
           Here's an overview of your team performance
         </p>
       </div>
-
       {loading && (
         <div className="text-center text-slate-600 dark:text-slate-400 mb-8">
           Loading counts...
         </div>
       )}
-
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredCounts.map((item, index) => {
           const IconComponent = iconMap[item.user_type] || UserRound;
           const route = userTypeRoutes[item.user_type] || "#";
-
           return (
             <Link
               key={item.user_type}
