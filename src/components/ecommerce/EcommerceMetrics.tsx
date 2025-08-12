@@ -74,39 +74,23 @@ export default function Home() {
   );
 
   const typesCountParams = useMemo(() => {
-    if (!isAuthenticated || !user?.id || !user?.user_type) {
-      return null;
-    }
-    if (user.user_type === BUILDER_USER_TYPE) {
-      return {
-        admin_user_id: user.id,
-        admin_user_type: user.user_type,
-      };
-    } else {
-      return {
-        admin_user_id: user.created_user_id,
-        admin_user_type: BUILDER_USER_TYPE,
-        emp_id: user.id,
-        emp_user_type: user.user_type,
-      };
-    }
+    if (!isAuthenticated || !user?.id) return null;
+
+    return {
+      admin_user_id: user.id,
+      admin_user_type: user.user_type,
+    };
   }, [isAuthenticated, user]);
 
   useEffect(() => {
-    if (typesCountParams && user?.user_type !== 1) {
+    if (typesCountParams) {
       dispatch(getTypesCount(typesCountParams))
         .unwrap()
         .catch((err) => {
           toast.error(err || "Failed to fetch counts");
         });
-    } else if (isAuthenticated && user) {
-      console.warn("Invalid user data:", {
-        id: user.id,
-        user_type: user.user_type,
-        created_user_id: user.created_user_id,
-      });
     }
-  }, [typesCountParams, dispatch, user]);
+  }, [typesCountParams, dispatch]);
 
   // Define allowed user types
   const allowedUserTypes = [
@@ -131,21 +115,6 @@ export default function Home() {
     return counts;
   }, [userCounts]);
 
-  if (user?.user_type === 1) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50 p-6">
-        <div className="mb-8">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-2 h-8 bg-gradient-to-b from-blue-600 to-indigo-600 rounded-full"></div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent">
-              Welcome back, {user?.name || "User"}!
-            </h1>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50 p-6">
       <div className="mb-8">
@@ -163,24 +132,6 @@ export default function Home() {
       {loading && (
         <div className="text-center text-slate-600 dark:text-slate-400 mb-8">
           Loading counts...
-        </div>
-      )}
-      {error && (
-        <div className="text-center text-red-500 mb-8">
-          {error}
-          <button
-            onClick={() =>
-              dispatch(
-                getTypesCount({
-                  admin_user_id: user!.id,
-                  admin_user_type: user!.user_type,
-                })
-              )
-            }
-            className="ml-4 px-4 py-2 text-sm bg-blue-600 text-white rounded-md"
-          >
-            Retry
-          </button>
         </div>
       )}
 
