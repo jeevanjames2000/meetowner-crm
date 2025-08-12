@@ -21,16 +21,13 @@ export default function SignInForm() {
   const navigate = useNavigate();
   const formRef = useRef<HTMLFormElement>(null);
   const submitButtonRef = useRef<HTMLButtonElement>(null);
-  const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     mobile: "",
-    password: "",
     otp: "",
     countryCode: "+91",
   });
   const [errors, setErrors] = useState({
     mobile: "",
-    password: "",
     otp: "",
     general: "",
   });
@@ -73,31 +70,23 @@ export default function SignInForm() {
   };
   const handleSubmitLogin = async (e: { preventDefault: () => void }) => {
     e.preventDefault();
-    const newErrors = { mobile: "", password: "", otp: "", general: "" };
+    const newErrors = { mobile: "", otp: "", general: "" };
     let hasError = false;
     if (!formData.mobile.trim()) {
       newErrors.mobile = "Mobile number is required";
       hasError = true;
     }
-    if (!formData.password.trim()) {
-      newErrors.password = "Password is required";
-      hasError = true;
-    }
+
     const mobileError = validateMobile(formData.mobile);
     if (mobileError) {
       newErrors.mobile = mobileError;
       hasError = true;
     }
-    if (hasError) {
-      setErrors(newErrors);
-      toast.error(newErrors.mobile || newErrors.password);
-      return;
-    }
+
     try {
       await dispatch(
         loginUser({
           mobile: formData.mobile,
-          password: formData.password,
           isWhatsapp: false,
         })
       ).unwrap();
@@ -116,10 +105,7 @@ export default function SignInForm() {
       newErrors.mobile = "Mobile number is required";
       hasError = true;
     }
-    if (!formData.password.trim()) {
-      newErrors.password = "Password is required";
-      hasError = true;
-    }
+
     const mobileError = validateMobile(formData.mobile);
     if (mobileError) {
       newErrors.mobile = mobileError;
@@ -134,7 +120,6 @@ export default function SignInForm() {
       await dispatch(
         loginUser({
           mobile: formData.mobile,
-          password: formData.password,
           isWhatsapp: true,
           countryCode: formData.countryCode,
         })
@@ -149,7 +134,7 @@ export default function SignInForm() {
   };
   const handleSubmitOtp = async (e: { preventDefault: () => void }) => {
     e.preventDefault();
-    const newErrors = { mobile: "", password: "", otp: "", general: "" };
+    const newErrors = { mobile: "", otp: "", general: "" };
     let hasError = false;
     if (!formData.otp.trim()) {
       newErrors.otp = "OTP is required";
@@ -203,7 +188,7 @@ export default function SignInForm() {
   const handleBackToLogin = () => {
     dispatch(resetOtpState());
     setFormData((prev) => ({ ...prev, otp: "" }));
-    setErrors({ mobile: "", password: "", otp: "", general: "" });
+    setErrors({ mobile: "", otp: "", general: "" });
   };
   useEffect(() => {
     if (error) {
@@ -260,37 +245,6 @@ export default function SignInForm() {
                     {errors.mobile && (
                       <p className="mt-1 text-sm text-error-500">
                         {errors.mobile}
-                      </p>
-                    )}
-                  </div>
-                  <div>
-                    <Label>
-                      Password <span className="text-error-500">*</span>
-                    </Label>
-                    <div className="relative">
-                      <Input
-                        name="password"
-                        value={formData.password}
-                        onChange={handleInputChange}
-                        onKeyDown={handleKeyPress}
-                        type={showPassword ? "text" : "password"}
-                        placeholder="Enter your password"
-                        disabled={loading}
-                      />
-                      <span
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute z-30 -translate-y-1/2 cursor-pointer right-4 top-1/2"
-                      >
-                        {showPassword ? (
-                          <EyeIcon className="fill-gray-500 dark:fill-gray-400 size-5" />
-                        ) : (
-                          <EyeCloseIcon className="fill-gray-500 dark:fill-gray-400 size-5" />
-                        )}
-                      </span>
-                    </div>
-                    {errors.password && (
-                      <p className="mt-1 text-sm text-error-500">
-                        {errors.password}
                       </p>
                     )}
                   </div>

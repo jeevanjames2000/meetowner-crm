@@ -6,7 +6,6 @@ import ngrokAxiosInstance from "../../hooks/AxiosInstance";
 
 interface LoginRequest {
   mobile: string;
-  password: string;
   isWhatsapp?: boolean;
   countryCode?: string;
 }
@@ -136,9 +135,8 @@ export const loginUser = createAsyncThunk(
   "auth/loginUser",
   async (credentials: LoginRequest, { rejectWithValue, dispatch }) => {
     try {
-      const promise = ngrokAxiosInstance.post<LoginResponse>("/auth/v1/loginAgent", {
+      const promise = ngrokAxiosInstance.post<LoginResponse>("/auth/v1/loginnew", {
         mobile: credentials.mobile,
-        password: credentials.password,
       });
       toast.promise(promise, {
         loading: "Logging in...",
