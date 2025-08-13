@@ -16,11 +16,11 @@ import { clearLeads, getPropertyEnquiries } from "../../store/slices/leadslice";
 import FilterBar from "../../components/common/FilterBar";
 import PageBreadcrumbList from "../../components/common/PageBreadCrumbLists";
 import UpdateLeadModal from "./UpdateLeadModel";
-import { BUILDER_USER_TYPE, sidebarSubItems } from "./CustomComponents";
+import { sidebarSubItems } from "./CustomComponents";
 import { useNavigate, useParams } from "react-router";
 
 interface PropertyEnquiry {
-  id: number;
+  lead_id: number;
   unique_property_id: string;
   fullname: string;
   email: string | null;
@@ -87,14 +87,11 @@ const OpenLeads: React.FC = () => {
   const navigate = useNavigate();
   const { lead_in, status } = useParams<{ lead_in: string; status: string }>();
   const dispatch = useDispatch<AppDispatch>();
-  const { user, isAuthenticated } = useSelector(
-    (state: RootState) => state.auth
-  );
+  const { user } = useSelector((state: RootState) => state.auth);
   const { openLeads, loading, error } = useSelector(
     (state: RootState) => state.lead
   );
 
-  const isBuilder = user?.user_type === BUILDER_USER_TYPE;
   const userId =
     user?.id || parseInt(localStorage.getItem("userId") || "96", 10);
   const itemsPerPage = 10;
@@ -116,17 +113,16 @@ const OpenLeads: React.FC = () => {
   );
 
   useEffect(() => {
-    if (isAuthenticated && userId) {
-      dispatch(getPropertyEnquiries({ user_id: userId }))
-        .unwrap()
-        .catch((err) => {
-          toast.error(err || "Failed to fetch property enquiries");
-        });
-    }
+    dispatch(getPropertyEnquiries({ user_id: userId }))
+      .unwrap()
+      .catch((err) => {
+        toast.error(err || "Failed to fetch property enquiries");
+      });
+
     return () => {
       dispatch(clearLeads());
     };
-  }, [isAuthenticated, userId, statusUpdated, dispatch]);
+  }, []);
 
   const filteredLeads = useMemo(() => {
     return (
@@ -172,15 +168,7 @@ const OpenLeads: React.FC = () => {
         );
       }) || []
     );
-  }, [
-    openLeads,
-    searchQuery,
-    selectedUserType,
-    createdDate,
-    updatedDate,
-    selectedState,
-    selectedCity,
-  ]);
+  }, [openLeads]);
 
   const totalCount = filteredLeads.length;
   const totalPages = Math.ceil(totalCount / itemsPerPage);
@@ -188,7 +176,6 @@ const OpenLeads: React.FC = () => {
     (localPage - 1) * itemsPerPage,
     localPage * itemsPerPage
   );
-
   const getPageTitle = () => sidebarItem?.name || "Property Enquiries";
 
   const handleSearch = (value: string) => {
@@ -229,31 +216,6 @@ const OpenLeads: React.FC = () => {
     setStatusUpdated(!statusUpdated);
     setIsUpdateModalOpen(false);
     setSelectedLeadId(null);
-  };
-
-  const handleMarkAsBooked = (leadId: number) => {
-    const lead = currentLeads.find(
-      (item: PropertyEnquiry) => item.id === leadId
-    );
-    if (lead) {
-      navigate(`/leads/book/${leadId}`, {
-        state: {
-          leadId,
-          leadAddedUserId: isBuilder ? user!.id : user!.created_user_id!,
-          leadAddedUserType: isBuilder
-            ? user!.user_type
-            : Number(user!.created_user_type),
-          propertyId: lead.id,
-        },
-      });
-    } else {
-      toast.error("Enquiry not found");
-    }
-  };
-
-  const handleUpdateLead = (leadId: number) => {
-    setSelectedLeadId(leadId);
-    setIsUpdateModalOpen(true);
   };
 
   const handleUserTypeChange = (value: string | null) => {
@@ -315,22 +277,6 @@ const OpenLeads: React.FC = () => {
     if (lead) handleViewHistory(lead);
   };
 
-  const handleBulkBookingDone = () => {
-    if (selectedLeadIdSingle === null) {
-      toast.error("Please select an enquiry.");
-      return;
-    }
-    handleMarkAsBooked(selectedLeadIdSingle);
-  };
-
-  const handleBulkUpdateLead = () => {
-    if (selectedLeadIdSingle === null) {
-      toast.error("Please select an enquiry.");
-      return;
-    }
-    handleUpdateLead(selectedLeadIdSingle);
-  };
-
   return (
     <div className="relative min-h-screen">
       <PageMeta title={`Property Enquiries - ${getPageTitle()}`} />
@@ -388,13 +334,13 @@ const OpenLeads: React.FC = () => {
             Loading enquiries...
           </div>
         )}
-        {error && <div className="text-center text-red-500 py-4">{error}</div>}
-        {!loading && !error && filteredLeads.length === 0 && (
+        {/* {error && <div className="text-center text-red-500 py-4">{error}</div>} */}
+        {!loading && filteredLeads.length === 0 && (
           <div className="text-center text-gray-600 dark:text-gray-400 py-4">
             No enquiries found.
           </div>
         )}
-        {!loading && !error && filteredLeads.length > 0 && (
+        {!loading && filteredLeads.length > 0 && (
           <div className="overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-white/[0.05] dark:bg-white/[0.03]">
             <div className="w-full overflow-x-auto">
               <Table className="w-full">
@@ -465,14 +411,14 @@ const OpenLeads: React.FC = () => {
                 <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
                   {currentLeads.map((item: PropertyEnquiry) => (
                     <TableRow
-                      key={item.id}
+                      key={item.lead_id}
                       className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                     >
                       <TableCell className="text-center">
                         <input
                           type="checkbox"
-                          checked={selectedLeadIdSingle === item.id}
-                          onChange={() => handleCheckboxChange(item.id)}
+                          checked={selectedLeadIdSingle === item.lead_id}
+                          onChange={() => handleCheckboxChange(item.lead_id)}
                           className="h-3 w-3 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                         />
                       </TableCell>

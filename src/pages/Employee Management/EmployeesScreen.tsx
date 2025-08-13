@@ -60,11 +60,11 @@ export default function EmployeesScreen() {
   const { user, isAuthenticated } = useSelector(
     (state: RootState) => state.auth
   );
-  console.log("user: ", user);
 
   const { users, loading, error } = useSelector(
     (state: RootState) => state.user
   );
+  console.log("users: ", users);
 
   const { states } = useSelector((state: RootState) => state.property);
   const { citiesQuery } = usePropertyQueries();

@@ -49,7 +49,6 @@ const AssignLeadEmployeePage: React.FC = () => {
     { value: "2", label: "Sales Manager" },
     { value: "3", label: "Telecallers" },
     { value: "4", label: "Marketing Executors" },
-    { value: "5", label: "Receptionists" },
   ];
 
   const priorityOptions = [
