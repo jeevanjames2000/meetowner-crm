@@ -66,7 +66,7 @@ export const getPropertyEnquiries = createAsyncThunk<
       const response = await ngrokAxiosInstance.get<{
         count: number;
         formattedResults: PropertyEnquiry[];
-      }>(`/enquiry/v1/getPropertyEnquiries?user_id=${user_id}`, {
+      }>(`/meetCRM/v2/leads/getPropertyEnquiries?user_id=${user_id}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -426,7 +426,7 @@ export const getLeadSources = createAsyncThunk<
       }
 
       const response = await ngrokAxiosInstance.get<LeadSourceResponse>(
-        `/api/v1/leads/leadsource`,
+        `/meetCRM/v2/leads/getAllLeadSources`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -434,11 +434,11 @@ export const getLeadSources = createAsyncThunk<
         }
       );
 
-      if (!response.data.results || response.data.results.length === 0) {
+      if (!response.data || response.data.length === 0) {
         return rejectWithValue("No lead sources found");
       }
 
-      return response.data.results;
+      return response.data;
     } catch (error) {
       const axiosError = error as AxiosError<ErrorResponse>;
       console.error("Get lead sources error:", axiosError);

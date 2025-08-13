@@ -61,7 +61,14 @@ const userTypeMap: { [key: number]: string } = {
   6: "Marketing Executors",
   7: "Receptionists",
 };
-
+const formatToIndianCurrency = (value) => {
+  if (!value || isNaN(value)) return "N/A";
+  const numValue = parseFloat(value);
+  if (numValue >= 10000000) return (numValue / 10000000).toFixed(2) + " Cr";
+  if (numValue >= 100000) return (numValue / 100000).toFixed(2) + " L";
+  if (numValue >= 1000) return (numValue / 1000).toFixed(2) + " K";
+  return numValue.toString();
+};
 const OpenLeads: React.FC = () => {
   const [localPage, setLocalPage] = useState<number>(1);
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -355,47 +362,24 @@ const OpenLeads: React.FC = () => {
           pagePlacHolder="Search by Name, Mobile, Email, Project, Type"
           onFilter={handleSearch}
         />
-        {isBuilder ? (
-          <>
-            <Button
-              variant="primary"
-              onClick={handleBulkAssign}
-              disabled={selectedLeadIdSingle === null}
-              className="px-4 py-1 h-10"
-            >
-              Assign Enquiry
-            </Button>
-            <Button
-              variant="primary"
-              onClick={handleBulkViewHistory}
-              disabled={selectedLeadIdSingle === null}
-              size="xs"
-              className="px-4 py-2 h-10"
-            >
-              View History
-            </Button>
-        
-          </>
-        ) : (
-          <>
-            <Button
-              variant="primary"
-              onClick={handleBulkUpdateLead}
-              disabled={selectedLeadIdSingle === null}
-              className="px-4 py-2 h-10"
-            >
-              Update Enquiry
-            </Button>
-            <Button
-              variant="primary"
-              onClick={handleBulkViewHistory}
-              disabled={selectedLeadIdSingle === null}
-              className="px-4 py-2 h-10"
-            >
-              View History
-            </Button>
-          </>
-        )}
+
+        <Button
+          variant="primary"
+          onClick={handleBulkAssign}
+          disabled={selectedLeadIdSingle === null}
+          className="px-4 py-1 h-10"
+        >
+          Assign Lead
+        </Button>
+        <Button
+          variant="primary"
+          onClick={handleBulkViewHistory}
+          disabled={selectedLeadIdSingle === null}
+          size="xs"
+          className="px-4 py-2 h-10"
+        >
+          View History
+        </Button>
       </div>
 
       <div className="space-y-6">
@@ -474,7 +458,7 @@ const OpenLeads: React.FC = () => {
                       isHeader
                       className="text-left font-medium text-xs whitespace-nowrap w-[10%]"
                     >
-                      Cost
+                      Property Cost
                     </TableCell>
                   </TableRow>
                 </TableHeader>
@@ -493,12 +477,16 @@ const OpenLeads: React.FC = () => {
                         />
                       </TableCell>
                       <TableCell className="text-left truncate max-w-[120px]">
-                        <span title={item.fullname || "N/A"}>
-                          {item.fullname || "N/A"}
+                        <span
+                          title={
+                            item.fullname || item.userDetails.name || "N/A"
+                          }
+                        >
+                          {item.fullname || item.userDetails.name || "N/A"}
                         </span>
                       </TableCell>
                       <TableCell className="text-left">
-                        {item.mobile || "N/A"}
+                        {item.mobile || item.userDetails.mobile || "N/A"}
                       </TableCell>
                       <TableCell className="text-left truncate max-w-[120px]">
                         <span
@@ -524,11 +512,8 @@ const OpenLeads: React.FC = () => {
                       <TableCell className="text-left">
                         {item.state_id || "N/A"}
                       </TableCell>
-                      <TableCell className="text-left">
-                        {Number(item.property_cost).toLocaleString("en-IN", {
-                          style: "currency",
-                          currency: "INR",
-                        }) || "N/A"}
+                      <TableCell className="text-center">
+                        {formatToIndianCurrency(item.property_cost) || "N/A"}
                       </TableCell>
                     </TableRow>
                   ))}

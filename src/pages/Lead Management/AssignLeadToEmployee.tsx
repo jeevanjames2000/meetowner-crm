@@ -74,8 +74,8 @@ const AssignLeadEmployeePage: React.FC = () => {
     if (user?.id && formData.assigned_user_type) {
       dispatch(
         getUsersByType({
-          admin_user_id: user.id,
-          emp_user_type: parseInt(formData.assigned_user_type),
+          created_user_id: user.id,
+          user_type: parseInt(formData.assigned_user_type),
         })
       );
     }
@@ -150,7 +150,7 @@ const AssignLeadEmployeePage: React.FC = () => {
         status_id: formData.status_id
           ? parseInt(formData.status_id)
           : undefined,
-      };
+      }; 
 
       await dispatch(assignLeadToEmployee(submitData)).unwrap();
       setSubmitSuccess(

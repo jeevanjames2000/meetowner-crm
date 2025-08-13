@@ -124,7 +124,7 @@ export interface LeadStatus {
   is_default: number;
 }
 
-export interface LeadStatusResponse {
+export interface LeadStatusResponse { 
   status_id: number;
   status_name:string;
 }

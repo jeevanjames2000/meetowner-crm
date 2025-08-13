@@ -364,54 +364,32 @@ const LeadsType: React.FC = () => {
           pagePlacHolder="Search by Name, Mobile, Email, Project"
           onFilter={handleSearch}
         />
-        {isBuilder ? (
-          <>
-            <Button
-              variant="primary"
-              onClick={handleBulkAssign}
-              disabled={selectedLeadIdSingle === null}
-              className="px-4 py-1 h-10"
-            >
-              Assign Lead
-            </Button>
-            <Button
-              variant="primary"
-              onClick={handleBulkViewHistory}
-              disabled={selectedLeadIdSingle === null}
-              size="xs"
-              className="px-4 py-2 h-10"
-            >
-              View History
-            </Button>
-            <Button
-              variant="primary"
-              onClick={handleBulkBookingDone}
-              disabled={selectedLeadIdSingle === null}
-              className="px-4 py-2 h-10"
-            >
-              Booking Done
-            </Button>
-          </>
-        ) : (
-          <>
-            <Button
-              variant="primary"
-              onClick={handleBulkUpdateLead}
-              disabled={selectedLeadIdSingle === null}
-              className="px-4 py-2 h-10"
-            >
-              Update Lead
-            </Button>
-            <Button
-              variant="primary"
-              onClick={handleBulkViewHistory}
-              disabled={selectedLeadIdSingle === null}
-              className="px-4 py-2 h-10"
-            >
-              View History
-            </Button>
-          </>
-        )}
+
+        <Button
+          variant="primary"
+          onClick={handleBulkAssign}
+          disabled={selectedLeadIdSingle === null}
+          className="px-4 py-1 h-10"
+        >
+          Assign Lead
+        </Button>
+        <Button
+          variant="primary"
+          onClick={handleBulkViewHistory}
+          disabled={selectedLeadIdSingle === null}
+          size="xs"
+          className="px-4 py-2 h-10"
+        >
+          View History
+        </Button>
+        <Button
+          variant="primary"
+          onClick={handleBulkBookingDone}
+          disabled={selectedLeadIdSingle === null}
+          className="px-4 py-2 h-10"
+        >
+          Booking Done
+        </Button>
       </div>
 
       <div className="space-y-6">

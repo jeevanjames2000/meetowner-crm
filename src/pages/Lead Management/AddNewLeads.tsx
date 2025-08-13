@@ -4,15 +4,15 @@ import { Building, Target, Users, User } from "lucide-react";
 import Input from "../../components/form/input/InputField";
 import Select from "../../components/form/Select";
 import { AppDispatch, RootState } from "../../store/store";
-import { fetchOngoingProjects } from "../../store/slices/projectSlice";
+import { fetchAllProjects } from "../../store/slices/projectSlice";
 import { clearUsers, getUsersByType } from "../../store/slices/userslice";
-import { getLeadSources, insertLead } from "../../store/slices/leadslice";
+import { getLeadSources } from "../../store/slices/leadslice";
 import { LeadSource } from "../../types/LeadModel";
 interface FormData {
   name: string;
   mobile: string;
   email: string;
-  interestedProject: string;
+  interestedProject: Project | null;
   leadSource: string;
   channelPartner: string;
   campaign: string;
@@ -47,9 +47,10 @@ const LeadForm: React.FC = () => {
   const { user, isAuthenticated } = useSelector(
     (state: RootState) => state.auth
   );
-  const { ongoingProjects, loading: projectsLoading } = useSelector(
+  const { allProjects, loading: projectsLoading } = useSelector(
     (state: RootState) => state.projects
   );
+
   const { users, loading: usersLoading } = useSelector(
     (state: RootState) => state.user
   );
@@ -58,105 +59,74 @@ const LeadForm: React.FC = () => {
     loading: leadsLoading,
     error: leadsError,
   } = useSelector((state: RootState) => state.lead);
-  const isBuilder = user?.user_type === 2;
+  console.log("leadSources: ", leadSources);
+
   const [formData, setFormData] = useState<FormData>({
     name: "",
     mobile: "",
     email: "",
-    interestedProject: "",
-    leadSource: isBuilder ? "" : "6",
+    interestedProject: null,
+    leadSource: "",
     channelPartner: "",
     campaign: "",
     propertyType: "",
     squareFeet: "",
     budget: "",
   });
+  console.log("formData: ", formData);
   const [errors, setErrors] = useState<Errors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   useEffect(() => {
-    if (isAuthenticated && user?.id) {
-      if (isBuilder) {
-        dispatch(
-          fetchOngoingProjects({
-            admin_user_type: user.user_type,
-            admin_user_id: user.id,
-          })
-        );
-        dispatch(getLeadSources());
-      } else {
-        dispatch(
-          fetchOngoingProjects({
-            admin_user_type: user.created_user_type,
-            admin_user_id: user.created_user_id,
-          })
-        );
-      }
-    }
+    dispatch(
+      fetchAllProjects({
+        user_id: user.id,
+      })
+    );
+    dispatch(getLeadSources());
     return () => {
       dispatch(clearUsers());
     };
-  }, [isAuthenticated, user, dispatch, isBuilder]);
+  }, [isAuthenticated, user, dispatch]);
   useEffect(() => {
-    if (
-      isAuthenticated &&
-      user?.id &&
-      isBuilder &&
-      formData.leadSource === "6"
-    ) {
+    if (isAuthenticated && user?.id && formData.leadSource === "6") {
       dispatch(getUsersByType({ admin_user_id: user.id, emp_user_type: 3 }));
     }
-  }, [formData.leadSource, isAuthenticated, user, dispatch, isBuilder]);
+  }, [formData.leadSource, isAuthenticated, user, dispatch]);
   const projectOptions =
-    ongoingProjects?.map((project: Project) => ({
-      value: project.property_id.toString(),
-      label: `${project.project_name} - ${project.property_type}`,
+    allProjects?.map((project: Project) => ({
+      value: project.unique_property_id.toString(),
+      label: `${project.property_name} - ${project.property_in}`,
     })) || [];
   const channelPartnerOptions =
     users?.map((partner: ChannelPartner) => ({
       value: partner.id.toString(),
       label: `${partner.name} - ${partner.mobile}`,
     })) || [];
-  console.log("channelPartnerOptions: ", channelPartnerOptions);
-  const campaignOptions =
-    leadSources
-      ?.filter(
-        (source: LeadSource) => source.lead_source_name !== "Channel Partner"
-      )
-      ?.map((source: LeadSource) => ({
-        value: source.lead_source_id.toString(),
-        label: source.lead_source_name,
-      })) || [];
+
   const leadSourceOptions =
     leadSources?.map((source: LeadSource) => ({
       value: source.lead_source_id.toString(),
       label: source.lead_source_name,
     })) || [];
-  const propertyTypeOptions = [
-    { value: "1bhk", label: "1 BHK" },
-    { value: "2bhk", label: "2 BHK" },
-    { value: "3bhk", label: "3 BHK" },
-    { value: "4bhk", label: "4 BHK" },
-    { value: "5bhk", label: "5 BHK" },
-    { value: "6bhk", label: "6 BHK" },
-  ];
-  const handleInputChange = (field: keyof FormData) => (value: string) => {
-    setFormData((prev) => {
-      if (field === "leadSource") {
-        return {
-          ...prev,
-          [field]: value,
-          channelPartner: "",
-          campaign: "",
-        };
+  const handleInputChange =
+    (field: keyof FormData) => (value: string | Project) => {
+      setFormData((prev) => {
+        if (field === "leadSource") {
+          return {
+            ...prev,
+            [field]: value as string,
+            channelPartner: "",
+            campaign: "",
+          };
+        }
+        return { ...prev, [field]: value };
+      });
+      if (errors[field]) {
+        setErrors((prev) => ({ ...prev, [field]: undefined }));
       }
-      return { ...prev, [field]: value };
-    });
-    if (errors[field]) {
-      setErrors((prev) => ({ ...prev, [field]: undefined }));
-    }
-  };
+    };
   const validateForm = (): boolean => {
     const newErrors: Errors = {};
     if (!formData.name.trim()) {
@@ -177,15 +147,10 @@ const LeadForm: React.FC = () => {
     if (!formData.interestedProject) {
       newErrors.interestedProject = "Please select a project";
     }
-    if (isBuilder && !formData.leadSource) {
+    if (!formData.leadSource) {
       newErrors.leadSource = "Please select a lead source";
     }
-    if (isBuilder && formData.leadSource === "6" && !formData.channelPartner) {
-      newErrors.channelPartner = "Please select a channel partner";
-    }
-    if (isBuilder && formData.leadSource === "4" && !formData.campaign) {
-      newErrors.campaign = "Please select a campaign";
-    }
+
     if (!formData.propertyType) {
       newErrors.propertyType = "Please select a property type";
     }
@@ -216,51 +181,32 @@ const LeadForm: React.FC = () => {
         (opt) => opt.value === formData.channelPartner
       );
       const leadData: any = {
-        customer_name: formData.name,
-        customer_phone_number: formData.mobile,
-        customer_email: formData.email,
-        interested_project_id: Number(formData.interestedProject),
-        interested_project_name: selectedProject?.label.split(" - ")[0],
-        lead_source_id: isBuilder ? Number(formData.leadSource) : 6,
-        lead_source_user_id: Number(formData.channelPartner),
-        sqft: formData.squareFeet,
+        unique_property_id: selectedProject?.unique_property_id,
+        fullname: formData.name,
+        email: formData.email,
+        mobile: formData.mobile,
+        sub_type: selectedProject?.sub_type,
+        property_for: selectedProject?.property_for,
+        property_type: selectedProject?.property_type,
+        property_in: selectedProject?.property_in,
+        state_id: selectedProject?.state_id,
+        city_id: selectedProject?.city_id,
         budget: formData.budget,
-        ...(isBuilder
-          ? {
-              lead_added_user_type: user?.user_type,
-              lead_added_user_id: user?.id,
-            }
-          : {
-              lead_added_user_type: user?.created_user_type,
-              lead_added_user_id: user?.created_user_id,
-            }),
-        ...(isBuilder && formData.leadSource === "6"
-          ? {
-              assigned_user_type: 3,
-              assigned_id: Number(formData.channelPartner),
-              assigned_name:
-                selectedChannelPartner?.label.split(" - ")[0] || "",
-              assigned_emp_number:
-                selectedChannelPartner?.label.split(" - ")[1] || "",
-            }
-          : !isBuilder
-          ? {
-              assigned_user_type: 3,
-              assigned_id: user?.id,
-              assigned_name: user?.name || "",
-              assigned_emp_number: user?.mobile || "",
-            }
-          : {}),
+        google_address: selectedProject?.google_address,
+        property_name: selectedProject?.property_name,
+        lead_source_id: Number(formData.leadSource),
+        lead_added_user_type: 1,
+        lead_added_user_id: 4,
       };
+
       console.log("leadData: ", leadData);
-      const result = await dispatch(insertLead(leadData)).unwrap();
       setSubmitSuccess(`Lead created successfully! Lead ID: ${result.lead_id}`);
       setFormData({
         name: "",
         mobile: "",
         email: "",
         interestedProject: "",
-        leadSource: isBuilder ? "" : "6",
+        leadSource: "",
         channelPartner: "",
         campaign: "",
         propertyType: "",
@@ -301,12 +247,6 @@ const LeadForm: React.FC = () => {
           <p className="text-gray-600 text-sm">
             Capture potential client information for your real estate projects
           </p>
-          {!isBuilder && (
-            <p className="text-sm text-gray-600">
-              This lead will be automatically assigned to you as the channel
-              partner.
-            </p>
-          )}
         </div>
         <div className="bg-white/70 backdrop-blur-xl rounded-2xl shadow-xl border border-white/20 p-8 animate-fade-in">
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -363,7 +303,6 @@ const LeadForm: React.FC = () => {
                 )}
               </div>
             </div>
-            {}
             <div className="space-y-6 pt-6 border-t border-realty-200">
               <h2 className="text-lg font-semibold text-realty-700 flex items-center gap-2">
                 <Building className="w-5 h-5" />
@@ -372,8 +311,16 @@ const LeadForm: React.FC = () => {
               <Select
                 label="Interested Project"
                 options={projectOptions}
-                value={formData.interestedProject}
-                onChange={handleInputChange("interestedProject")}
+                value={formData.interestedProject?.unique_property_id || ""}
+                onChange={(value) => {
+                  const selectedProject = allProjects.find(
+                    (project: Project) =>
+                      project.unique_property_id.toString() === value
+                  );
+                  handleInputChange("interestedProject")(
+                    selectedProject || null
+                  );
+                }}
                 placeholder={
                   projectsLoading
                     ? "Loading projects..."
@@ -382,104 +329,23 @@ const LeadForm: React.FC = () => {
                 error={errors.interestedProject}
               />
             </div>
-            {}
-            {isBuilder && (
-              <div className="space-y-6 pt-6 border-t border-realty-200">
-                <h2 className="text-lg font-semibold text-realty-700 flex items-center gap-2">
-                  <Target className="w-5 h-5" />
-                  Lead Source
-                </h2>
-                <Select
-                  label="Lead Source"
-                  options={leadSourceOptions}
-                  value={formData.leadSource}
-                  onChange={handleInputChange("leadSource")}
-                  placeholder={
-                    leadsLoading
-                      ? "Loading lead sources..."
-                      : "Select lead source"
-                  }
-                  error={errors.leadSource}
-                />
-                {formData.leadSource === "6" && (
-                  <Select
-                    label="Channel Partner"
-                    options={channelPartnerOptions}
-                    value={formData.channelPartner}
-                    onChange={handleInputChange("channelPartner")}
-                    placeholder={
-                      usersLoading
-                        ? "Loading partners..."
-                        : "Select channel partner"
-                    }
-                    error={errors.channelPartner}
-                  />
-                )}
-                {formData.leadSource === "4" && (
-                  <Select
-                    label="Marketing Campaign"
-                    options={campaignOptions}
-                    value={formData.campaign}
-                    onChange={handleInputChange("campaign")}
-                    placeholder={
-                      leadsLoading ? "Loading campaigns..." : "Select campaign"
-                    }
-                    error={errors.campaign}
-                  />
-                )}
-              </div>
-            )}
-            {}
             <div className="space-y-6 pt-6 border-t border-realty-200">
               <h2 className="text-lg font-semibold text-realty-700 flex items-center gap-2">
-                <Building className="w-5 h-5" />
-                Property
+                <Target className="w-5 h-5" />
+                Lead Source
               </h2>
-              <div className="space-y-1">
-                <label className="block text-sm font-medium text-realty-700 dark:text-realty-300">
-                  Select BHK Type
-                </label>
-                <div className="flex gap-3 flex-wrap">
-                  {propertyTypeOptions.map((option) => (
-                    <button
-                      type="button"
-                      key={option.value}
-                      onClick={() =>
-                        handleInputChange("propertyType")(option.value)
-                      }
-                      className={`px-4 py-2 rounded-md border transition-all ${
-                        formData.propertyType === option.value
-                          ? "bg-blue-900 text-white border-blue-900"
-                          : "bg-white text-gray-700 border-gray-300 hover:border-blue-900"
-                      }`}
-                    >
-                      {option.label}
-                    </button>
-                  ))}
-                </div>
-                {errors.propertyType && (
-                  <p className="text-red-500 text-sm mt-1">
-                    {errors.propertyType}
-                  </p>
-                )}
-              </div>
-            </div>
-            <div className="space-y-1">
-              <label className="block text-sm font-medium text-realty-700 dark:text-realty-300">
-                Square Feet
-              </label>
-              <Input
-                type="number"
-                value={formData.squareFeet}
-                onChange={(e) =>
-                  handleInputChange("squareFeet")(e.target.value)
+              <Select
+                label="Lead Source"
+                options={leadSourceOptions}
+                value={formData.leadSource}
+                onChange={handleInputChange("leadSource")}
+                placeholder={
+                  leadsLoading
+                    ? "Loading lead sources..."
+                    : "Select lead source"
                 }
-                placeholder="Enter square feet area"
-                className={errors.squareFeet ? "border-red-500" : ""}
+                error={errors.leadSource}
               />
-              {errors.squareFeet && (
-                <p className="text-red-500 text-sm mt-1">{errors.squareFeet}</p>
-              )}
             </div>
             <div className="space-y-1">
               <label className="block text-sm font-medium text-realty-700 dark:text-realty-300">
@@ -496,19 +362,18 @@ const LeadForm: React.FC = () => {
                 <p className="text-red-500 text-sm mt-1">{errors.budget}</p>
               )}
             </div>
-            {}
             <div className="pt-6">
               <button
                 type="submit"
                 disabled={
                   isSubmitting ||
                   projectsLoading ||
-                  (isBuilder && (usersLoading || leadsLoading))
+                  usersLoading ||
+                  leadsLoading
                 }
                 className="w-full py-3 bg-blue-900 text-white font-semibold rounded-xl transition-all duration-300 disabled:opacity-50"
               >
-                {isSubmitting ||
-                (isBuilder && (usersLoading || leadsLoading)) ? (
+                {isSubmitting || usersLoading || leadsLoading ? (
                   <div className="flex items-center justify-center gap-2">
                     <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                     Creating Lead...

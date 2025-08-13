@@ -56,7 +56,6 @@ export const insertUser = createAsyncThunk<
 >(
   "user/insertUser",
   async (formData, { rejectWithValue }) => {
-    console.log("formData: ", formData);
     try {
       const token = localStorage.getItem("token");
       if (!token) {
