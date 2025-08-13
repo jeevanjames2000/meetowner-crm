@@ -10,7 +10,7 @@ export interface InsertUserRequest {
   user_type: number;
   name: string;
   mobile: string;
-  email:string;
+  email: string;
   password: string;
   status: number;
   state: string;
@@ -18,21 +18,21 @@ export interface InsertUserRequest {
   location: string;
   address: string;
   pincode: string;
-  gst_number?: string; 
-  rera_number?: string; 
+  gst_number?: string;
+  rera_number?: string;
   created_by: string;
   created_user_id: number;
-  created_user_type:number;
+  created_user_type: number;
   company_name?: string;
-  company_number?: string; 
-  company_address?: string; 
-  representative_name?: string; 
-  pan_card_number?: string; 
+  company_number?: string;
+  company_address?: string;
+  representative_name?: string;
+  pan_card_number?: string;
   aadhar_number?: string;
-  photo?:string;
-  account_number:string;
-  ifsc_code:string;
-  company_logo?:string;
+  photo?: string;
+  account_number: string;
+  ifsc_code: string;
+  company_logo?: string;
 }
 
 export interface InsertUserResponse {
@@ -57,12 +57,12 @@ export const insertUser = createAsyncThunk<
   "user/insertUser",
   async (formData, { rejectWithValue }) => {
     try {
-    
+
 
       const response = await axiosIstance.post<InsertUserResponse>(
         `/meetCRM/v2/createEmp`,
         formData,
-     
+
       );
 
       toast.success(response.data.message);
@@ -154,9 +154,9 @@ export const getUsersByType = createAsyncThunk<
     try {
       const response = await ngrokAxiosInstance.get<UsersResponse>(
         `/meetCRM/v2/getUsersTypeandCreatedBy?created_user_id=${created_user_id}&user_type=${user_type}`,
-       
+
       );
-console.log("getUsersByType response:", response.data);
+      console.log("getUsersByType response:", response.data);
       return response.data;
     } catch (error) {
       const axiosError = error as AxiosError<ErrorResponse>;
@@ -283,32 +283,20 @@ export const updateUserStatus = createAsyncThunk<
 
 export const getUserProfile = createAsyncThunk<
   User,
-  { admin_user_id: number; admin_user_type: number; emp_id?: number; emp_user_type?: number },
+  {user_id: number},
   { rejectValue: string }
 >(
   "user/getUserProfile",
-  async ({ admin_user_id, admin_user_type, emp_id, emp_user_type }, { rejectWithValue }) => {
+  async ({ user_id }, { rejectWithValue }) => {
+    console.log("user_idqqqqqqqqqqqqqqqqqqqqqqqqqq:", user_id);
     try {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        return rejectWithValue("No authentication token found. Please log in.");
-      }
-
-      const queryParams = new URLSearchParams({
-        admin_user_id: admin_user_id.toString(),
-        admin_user_type: admin_user_type.toString(),
-        ...(emp_id !== undefined && { emp_id: emp_id.toString() }),
-        ...(emp_user_type !== undefined && { emp_user_type: emp_user_type.toString() }),
-      });
+   const query = user_id
 
       const response = await ngrokAxiosInstance.get<UsersResponse>(
-        `/api/v1/getuserprofile?${queryParams}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
+        `/meetCRM/v2/getEmpProfileData?user_id=${query}`,
+
       );
+      console.log("getUserProfile response:", response.data);
 
       if (!response.data.data || response.data.data.length === 0) {
         return rejectWithValue("User not found");
@@ -400,7 +388,7 @@ const userSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-    
+
       .addCase(insertUser.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -452,7 +440,7 @@ const userSlice = createSlice({
         state.error = action.payload as string;
         toast.error(action.payload as string);
       })
-       .addCase(updateUserStatus.pending, (state) => {
+      .addCase(updateUserStatus.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
@@ -477,7 +465,7 @@ const userSlice = createSlice({
         state.error = action.payload as string;
         toast.error(action.payload as string);
       })
-       .addCase(deleteUser.pending, (state) => {
+      .addCase(deleteUser.pending, (state) => {
         state.loading = true;
         state.error = null;
       })

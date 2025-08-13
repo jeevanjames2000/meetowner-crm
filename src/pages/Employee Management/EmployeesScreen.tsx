@@ -153,7 +153,7 @@ console.log("user:qqq ", user.user_id);
   const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
   const paginatedUsers = filteredUsers.slice(startIndex, endIndex);
   const handleViewProfile = (id: number) => {
-    if (isAuthenticated && user?.id && empUserType) {
+    if (isAuthenticated && user?.user_id && empUserType) {
       navigate(`/employeedetails/${empUserType}/${id}`);
     }
   };

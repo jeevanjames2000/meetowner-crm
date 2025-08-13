@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router";
 import { useSelector, useDispatch } from "react-redux";
 import Button from "../../components/ui/button/Button";
 import { RootState, AppDispatch } from "../../store/store";
-import { getUserById, clearUsers } from "../../store/slices/userslice";
+import { getUserById, clearUsers, getUserProfile } from "../../store/slices/userslice";
 
 
 
@@ -38,17 +38,25 @@ const EmployeeDetail = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
   const { user, isAuthenticated } = useSelector((state: RootState) => state.auth);
+  console.log("user:", user?.
+user_id);
   const { selectedUser, loading, error } = useSelector((state: RootState) => state.user);
   const empUserType = Number(status);
 
+
   useEffect(() => {
-    if (isAuthenticated && user?.id && id && empUserType) {
-      dispatch(getUserById({ admin_user_id: user.id, emp_user_type: empUserType, emp_user_id: Number(id) }));
-    }
+    if (isAuthenticated && user?.user_id) {
+  dispatch(getUserProfile({ user_id: user.user_id }));
+}
+
     return () => {
       dispatch(clearUsers());
     };
   }, [isAuthenticated, user, id, empUserType, dispatch]);
+
+
+
+
 
   if (loading) {
     return <div className="p-4 text-center text-gray-600 dark:text-gray-400">Loading employee details...</div>;
