@@ -58,31 +58,25 @@ export const getPropertyEnquiries = createAsyncThunk<
   "lead/getPropertyEnquiries",
   async ({ user_id }, { rejectWithValue }) => {
     try {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        return rejectWithValue("No authentication token found. Please log in.");
-      }
+    
 
       const response = await ngrokAxiosInstance.get<{
         count: number;
-        formattedResults: PropertyEnquiry[];
-      }>(`/meetCRM/v2/leads/getPropertyEnquiries?user_id=${user_id}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+       
+      }>(`/meetCRM/v2/leads/getPropertyEnquiries?user_id=${user_id}`);
 
-      if (
-        !response.data.formattedResults ||
-        response.data.formattedResults.length === 0
-      ) {
+      if (!response.data || response.data.length === 0) {
         return rejectWithValue("No property enquiries found");
       }
 
-      return response.data.formattedResults;
+      return response.data;
     } catch (error) {
       const axiosError = error as AxiosError<ErrorResponse>;
-      console.error("Get property enquiries error:", axiosError);
+      console.error("Get property enquiries error:", {
+        message: axiosError.message,
+        response: axiosError.response?.data,
+        status: axiosError.response?.status,
+      });
       if (axiosError.response) {
         const status = axiosError.response.status;
         switch (status) {
@@ -94,14 +88,11 @@ export const getPropertyEnquiries = createAsyncThunk<
             return rejectWithValue("Server error. Please try again later.");
           default:
             return rejectWithValue(
-              axiosError.response.data?.message ||
-                "Failed to fetch property enquiries"
+              axiosError.response.data?.message || "Failed to fetch property enquiries"
             );
         }
       }
-      return rejectWithValue(
-        "Network error. Please check your connection and try again."
-      );
+      return rejectWithValue("Network error. Please check your connection and try again.");
     }
   }
 );
@@ -188,7 +179,6 @@ export const getLeadsByID = createAsyncThunk<
     { lead_added_user_type, lead_added_user_id, assigned_user_type, assigned_id, status_id },
     { rejectWithValue }
   ) => {
-    console.log("assigned_id: ", assigned_id);
     try {
       const token = localStorage.getItem("token");
       if (!token) {
@@ -204,7 +194,6 @@ export const getLeadsByID = createAsyncThunk<
         ...(status_id !== undefined && { status_id: status_id.toString() }), 
       });
 
-      console.log("queryParams: ", queryParams);
       const response = await ngrokAxiosInstance.get<LeadsResponse>(
         `/api/v1/leads/getLeadsChannelPartner?${queryParams}`,
         {
@@ -327,7 +316,6 @@ export const getBookedLeads = createAsyncThunk<
         ...(assigned_id !== undefined && { assigned_id: assigned_id.toString() }),
       });
 
-      console.log("getBookedLeads query params:", queryParams.toString()); // Debug log
 
       const response = await ngrokAxiosInstance.get<LeadsResponse>(
         `/api/v1/leads/bookedleads?${queryParams}`,
@@ -460,49 +448,53 @@ export const getLeadSources = createAsyncThunk<
   }
 );
 
-export const insertLead = createAsyncThunk<
+  export const insertLead = createAsyncThunk<
   InsertLeadResponse,
   {
-    customer_name: string;
-    customer_phone_number: string;
-    customer_email: string;
-    interested_project_id: number;
-    interested_project_name: string;
-    lead_source_id: number;
-    sqft: string;
+    unique_property_id: string;
+    fullname: string;
+    email: string;
+    mobile: string;
+    sub_type: string;
+    property_for: string;
+    property_in: string;
+    state_id: string | number;
+    city_id: string | number;
     budget: string;
+    google_address: string;
+    property_name: string;
+    lead_source_id: number;
     lead_added_user_type: number;
     lead_added_user_id: number;
     assigned_user_type?: number;
     assigned_id?: number;
     assigned_name?: string;
     assigned_emp_number?: string;
-    lead_source_user_id?:number;
+    lead_source_user_id?: number;
   },
   { rejectValue: string }
 >(
   "lead/insertLead",
   async (leadData, { rejectWithValue }) => {
     try {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        return rejectWithValue("No authentication token found. Please log in.");
-      }
       const payload: any = {
-        customer_name: leadData.customer_name,
-        customer_phone_number: leadData.customer_phone_number,
-        customer_email: leadData.customer_email,
-        interested_project_id: leadData.interested_project_id,
-        interested_project_name: leadData.interested_project_name,
+        unique_property_id: leadData.unique_property_id,
+        fullname: leadData.fullname,
+        email: leadData.email,
+        mobile: leadData.mobile,
+        sub_type: leadData.sub_type,
+        property_for: leadData.property_for,
+        property_in: leadData.property_in,
+        state_id: leadData.state_id,
+        city_id: leadData.city_id,
+        budget: leadData.budget ? Number(leadData.budget) : null,
+        google_address: leadData.google_address,
+        property_name: leadData.property_name,
         lead_source_id: leadData.lead_source_id,
-        lead_source_user_id:leadData.lead_source_user_id,
-        sqft: leadData.sqft,
-        budget: leadData.budget,
         lead_added_user_type: leadData.lead_added_user_type,
         lead_added_user_id: leadData.lead_added_user_id,
       };
 
-  
       if (leadData.lead_source_id === 6) {
         if (
           !leadData.assigned_user_type ||
@@ -519,23 +511,24 @@ export const insertLead = createAsyncThunk<
       }
 
       const response = await ngrokAxiosInstance.post<InsertLeadResponse>(
-        `/api/v1/insertLead`,
+        `/meetCRM/v2/leads/createLead`,
         payload,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
+        
       );
+      console.log("response: ", response);
 
-      if (response.data.status !== "success") {
+      if (response.data.status !== 201) {
         return rejectWithValue(response.data.message || "Failed to insert lead");
       }
 
       return response.data;
     } catch (error) {
       const axiosError = error as AxiosError<ErrorResponse>;
-      console.error("Insert lead error:", axiosError);
+      console.error("Insert lead error:", {
+        message: axiosError.message,
+        response: axiosError.response?.data,
+        status: axiosError.response?.status,
+      });
       if (axiosError.response) {
         const status = axiosError.response.status;
         switch (status) {
@@ -544,7 +537,7 @@ export const insertLead = createAsyncThunk<
           case 400:
             return rejectWithValue(axiosError.response.data?.message || "Invalid lead data provided");
           case 500:
-            return rejectWithValue("Server error. Please try again later.");
+            return rejectWithValue(axiosError.response.data?.message || "Server error. Please try again later.");
           default:
             return rejectWithValue(axiosError.response.data?.message || "Failed to insert lead");
         }
@@ -878,9 +871,48 @@ const leadSlice = createSlice({
         state.loading = true;
         state.error = null;
       })
-      .addCase(insertLead.fulfilled, (state) => {
+      .addCase(insertLead.fulfilled, (state, action) => {
         state.loading = false;
-        
+        // Optimistically add the new lead to openLeads
+        if (action.payload.data) {
+          const newLead: PropertyEnquiry = {
+            id: action.payload.lead_id,
+            unique_property_id: action.payload.data.unique_property_id,
+            fullname: action.payload.data.fullname,
+            email: action.payload.data.email,
+            mobile: action.payload.data.mobile,
+            created_date: new Date().toISOString(),
+            updated_date: new Date().toISOString(),
+            created_time: new Date().toISOString(),
+            sent_status: 0,
+            sub_type: action.payload.data.sub_type,
+            property_for: action.payload.data.property_for,
+            property_type: null,
+            property_in: action.payload.data.property_in,
+            state_id: String(action.payload.data.state_id),
+            city_id: String(action.payload.data.city_id),
+            location_id: "",
+            property_cost: action.payload.data.budget,
+            bedrooms: "",
+            bathroom: 0,
+            facing: "",
+            car_parking: 0,
+            bike_parking: 0,
+            description: "",
+            image: "",
+            google_address: action.payload.data.google_address,
+            property_name: action.payload.data.property_name,
+            userDetails: {
+              id: action.payload.data.lead_added_user_id,
+              name: action.payload.data.fullname,
+              email: action.payload.data.email,
+              mobile: action.payload.data.mobile,
+            },
+          };
+          state.openLeads = state.openLeads
+            ? [...state.openLeads, newLead]
+            : [newLead];
+        }
       })
       .addCase(insertLead.rejected, (state, action) => {
         state.loading = false;

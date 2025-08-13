@@ -57,20 +57,12 @@ export const insertUser = createAsyncThunk<
   "user/insertUser",
   async (formData, { rejectWithValue }) => {
     try {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        return rejectWithValue("No authentication token found. Please log in.");
-      }
+    
 
       const response = await axiosIstance.post<InsertUserResponse>(
         `/meetCRM/v2/createEmp`,
         formData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
+     
       );
 
       toast.success(response.data.message);

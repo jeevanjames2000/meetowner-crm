@@ -6,8 +6,14 @@ import Select from "../../components/form/Select";
 import { AppDispatch, RootState } from "../../store/store";
 import { fetchAllProjects } from "../../store/slices/projectSlice";
 import { clearUsers, getUsersByType } from "../../store/slices/userslice";
-import { getLeadSources } from "../../store/slices/leadslice";
+import {
+  getLeadSources,
+  getPropertyEnquiries,
+  insertLead,
+} from "../../store/slices/leadslice";
 import { LeadSource } from "../../types/LeadModel";
+import { useNavigate } from "react-router";
+import toast from "react-hot-toast";
 interface FormData {
   name: string;
   mobile: string;
@@ -50,7 +56,6 @@ const LeadForm: React.FC = () => {
   const { allProjects, loading: projectsLoading } = useSelector(
     (state: RootState) => state.projects
   );
-
   const { users, loading: usersLoading } = useSelector(
     (state: RootState) => state.user
   );
@@ -59,8 +64,7 @@ const LeadForm: React.FC = () => {
     loading: leadsLoading,
     error: leadsError,
   } = useSelector((state: RootState) => state.lead);
-  console.log("leadSources: ", leadSources);
-
+  const navigate = useNavigate();
   const [formData, setFormData] = useState<FormData>({
     name: "",
     mobile: "",
@@ -73,7 +77,6 @@ const LeadForm: React.FC = () => {
     squareFeet: "",
     budget: "",
   });
-  console.log("formData: ", formData);
   const [errors, setErrors] = useState<Errors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState<string | null>(null);
@@ -104,7 +107,6 @@ const LeadForm: React.FC = () => {
       value: partner.id.toString(),
       label: `${partner.name} - ${partner.mobile}`,
     })) || [];
-
   const leadSourceOptions =
     leadSources?.map((source: LeadSource) => ({
       value: source.lead_source_id.toString(),
@@ -150,13 +152,6 @@ const LeadForm: React.FC = () => {
     if (!formData.leadSource) {
       newErrors.leadSource = "Please select a lead source";
     }
-
-    if (!formData.propertyType) {
-      newErrors.propertyType = "Please select a property type";
-    }
-    if (!formData.squareFeet.trim()) {
-      newErrors.squareFeet = "Square feet is required";
-    }
     if (!formData.budget.trim()) {
       newErrors.budget = "Budget is required";
     } else if (!/^\d+$/.test(formData.budget)) {
@@ -165,42 +160,37 @@ const LeadForm: React.FC = () => {
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
+  const userId =
+    user?.id || parseInt(localStorage.getItem("userId") || "96", 10);
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validateForm()) {
-      return;
-    }
     setIsSubmitting(true);
     setSubmitError(null);
     setSubmitSuccess(null);
     try {
-      const selectedProject = projectOptions.find(
-        (opt) => opt.value === formData.interestedProject
-      );
-      const selectedChannelPartner = channelPartnerOptions.find(
-        (opt) => opt.value === formData.channelPartner
-      );
       const leadData: any = {
-        unique_property_id: selectedProject?.unique_property_id,
+        unique_property_id: formData.interestedProject?.unique_property_id,
         fullname: formData.name,
         email: formData.email,
         mobile: formData.mobile,
-        sub_type: selectedProject?.sub_type,
-        property_for: selectedProject?.property_for,
-        property_type: selectedProject?.property_type,
-        property_in: selectedProject?.property_in,
-        state_id: selectedProject?.state_id,
-        city_id: selectedProject?.city_id,
+        sub_type: formData.interestedProject?.sub_type,
+        property_for: formData.interestedProject?.property_for,
+        property_in: formData.interestedProject?.property_in,
+        state_id: formData.interestedProject?.state_id,
+        city_id: formData.interestedProject?.city_id,
         budget: formData.budget,
-        google_address: selectedProject?.google_address,
-        property_name: selectedProject?.property_name,
+        google_address: formData.interestedProject?.google_address,
+        property_name: formData.interestedProject?.property_name,
         lead_source_id: Number(formData.leadSource),
         lead_added_user_type: 1,
         lead_added_user_id: 4,
       };
-
-      console.log("leadData: ", leadData);
-      setSubmitSuccess(`Lead created successfully! Lead ID: ${result.lead_id}`);
+      dispatch(insertLead(leadData)).unwrap();
+      console.log("call");
+      dispatch(getPropertyEnquiries({ user_id: userId })).unwrap();
+      setSubmitSuccess(`Lead created successfully!`);
+      toast.success("Lead created successfully!");
+      navigate("/openLeads");
       setFormData({
         name: "",
         mobile: "",
@@ -214,9 +204,8 @@ const LeadForm: React.FC = () => {
         budget: "",
       });
     } catch (error: any) {
-      setSubmitError(
-        error.message || "Failed to create lead. Please try again."
-      );
+      console.log("error: ", error);
+      setSubmitError(error || "Failed to create lead. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
