@@ -53,6 +53,7 @@ const CreateEmployee = () => {
   const { user, isAuthenticated } = useSelector(
     (state: RootState) => state.auth
   );
+  console.log("user: ", user);
   const { cities, states, localities } = useSelector(
     (state: RootState) => state.places
   );
@@ -153,7 +154,6 @@ const CreateEmployee = () => {
       toast.error("Please log in to access this page");
       return;
     }
-   
   }, [isAuthenticated, user, navigate]);
   const debouncedFetchLocalities = useCallback(
     debounce((city: string, state: string, query: string) => {
@@ -218,10 +218,9 @@ const CreateEmployee = () => {
     []
   );
   const allDesignationOptions = [
-    { value: "4", text: "Sales Manager" },
-    { value: "5", text: "Telecallers" },
-    { value: "6", text: "Marketing Agent" },
-    { value: "7", text: "Receptionists" },
+    { value: "2", text: "Sales Manager" },
+    { value: "3", text: "Telecallers" },
+    { value: "4", text: "Marketing Agent" },
   ];
   const validateForm = () => {
     const newErrors: Errors = {};
@@ -267,7 +266,7 @@ const CreateEmployee = () => {
     e.preventDefault();
     if (!validateForm()) return;
     const createdBy = localStorage.getItem("name") || "Admin";
-    const createdUserId = parseInt(localStorage.getItem("userId") || "1");
+
     const payload = {
       name: formData.name,
       mobile: formData.mobile,
@@ -280,7 +279,7 @@ const CreateEmployee = () => {
       user_type: formData.designation,
       designation: formData.designation,
       created_by: createdBy,
-      created_userID: createdUserId,
+      created_userID: user?.user_id || "",
     };
     try {
       await dispatch(insertUser(payload)).unwrap();
