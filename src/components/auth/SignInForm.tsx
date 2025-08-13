@@ -106,12 +106,19 @@ console.log("df",tempUser)
         })
       ).unwrap();
     } catch (err: any) {
-      setErrors((prevErrors) => ({
-        ...prevErrors,
-        general: err.message || "Access denied!",
-      }));
-      toast.error(err.message || "Access denied!");
-    }
+    // If err is coming from rejectWithValue, it will already be backend's message
+    const errorMessage =
+      typeof err === "string"
+        ? err
+        : err?.message || "Access denied!";
+
+    setErrors((prevErrors) => ({
+      ...prevErrors,
+      general: errorMessage,
+    }));
+
+    toast.error(errorMessage);
+  }
   };
   
   const handleSubmitOtp = async (e: { preventDefault: () => void }) => {

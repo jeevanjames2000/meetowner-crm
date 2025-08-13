@@ -164,8 +164,19 @@ export const loginUser = createAsyncThunk(
       return response.data.user_details
     } catch (error) {
       const axiosError = error as AxiosError<ErrorResponse>;
-    
+
+
+
       if (axiosError.response) {
+        const backendMessage =
+          axiosError.response.data?.message ||
+          axiosError.response.data?.error ||
+          null;
+
+        // Always prefer backend message if available
+        if (backendMessage) {
+          return rejectWithValue(backendMessage);
+        }
         const status = axiosError.response.status;
         switch (status) {
           case 401:
@@ -231,23 +242,19 @@ export const getUserById = createAsyncThunk<
 >(
   "auth/v1/getUserById",
   async ({ userId, token }, { rejectWithValue }) => {
-    
+
     try {
       const response = await ngrokAxiosInstance.get<{ user: User }>(
-        `/auth/v1/getUserById?user_id=${userId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
+        `/meetCRM/v2/auth/authenticate?user_id=${userId}`,
 
-      if (!response.data.user) {
+      );
+      console.log("getUserById response:", response.data);
+      console.log("response.data.status ", response.data.status);
+      if (response.data.status === "false") {
         return rejectWithValue("User not found");
       }
 
-      return { user: response.data.user, token };
+      return { user: response.data.data, token };
     } catch (error) {
       const axiosError = error as AxiosError<ErrorResponse>;
       console.error("Get user by ID error:", axiosError);
@@ -273,14 +280,14 @@ export const getUserById = createAsyncThunk<
 
 export const verifyOtpAdmin = createAsyncThunk(
   "auth/verifyOtpAdmin",
-  async ({ mobile, otp }: VerifyOtpRequest, { rejectWithValue,  getState }) => {
+  async ({ mobile, otp }: VerifyOtpRequest, { rejectWithValue, getState }) => {
     console.log("verifyOtpAdmin params:", { mobile, otp });
     try {
       const state = getState() as { auth: AuthState };
-      const storedOtp = state.auth.otp; 
+      const storedOtp = state.auth.otp;
       if (storedOtp && otp === storedOtp) {
-       const userDetails = state.auth.tempUser
-       console.log("userDetails: ", userDetails);
+        const userDetails = state.auth.tempUser
+        console.log("userDetails: ", userDetails);
         const userId = state.auth.tempUser?.user_id;
         if (!userId) {
           throw new Error("User ID not found in temporary state");
@@ -406,7 +413,7 @@ const authSlice = createSlice({
       state.otp = null;
       state.isWhatsappFlow = false;
     },
-   
+
   },
   extraReducers: (builder) => {
     builder
@@ -450,9 +457,9 @@ const authSlice = createSlice({
         state.isAuthenticated = true;
         state.user = state.tempUser;
         state.token = state.tempToken;
-        localStorage.setItem("userDetails",JSON.stringify(state.tempUser))
-        localStorage.setItem("token",state.tempUser.token)
-       
+        localStorage.setItem("userDetails", JSON.stringify(state.tempUser))
+        localStorage.setItem("token", state.tempUser.token)
+
       })
       .addCase(verifyOtpAdmin.rejected, (state, action) => {
         state.loading = false;
@@ -514,22 +521,27 @@ const authSlice = createSlice({
         state.otp = null;
         localStorage.clear();
       })
-        .addCase(getUserById.pending, (state) => {
-      state.loading = true;
-      state.error = null;
-    })
-    .addCase(getUserById.fulfilled, (state, action) => {
-      state.loading = false;
-      state.isAuthenticated = true;
-      state.user = action.payload.user;
-      state.token = action.payload.token;
-      state.error = null;
-    
-    })
-    .addCase(getUserById.rejected, (state, action) => {
-      state.loading = false;
-      state.error = action.payload as string;
-    })
+      .addCase(getUserById.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(getUserById.fulfilled, (state, action) => {
+        state.user = {
+          id: action.payload.user.user_id,
+          name: action.payload.user.name,
+          email: action.payload.user.email,
+          photo: action.payload.user.photo,
+          mobile: action.payload.user.mobile,
+          subscription_package: action.payload.user.subscription_package,
+          subscription_status: action.payload.user.subscription_status,
+          crm_access: action.payload.user.crm_access,
+        };
+
+      })
+      .addCase(getUserById.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
       .addCase(getAllUsersCount.pending, (state) => {
         state.loading = true;
         state.error = null;

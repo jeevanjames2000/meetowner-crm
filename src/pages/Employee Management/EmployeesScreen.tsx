@@ -60,7 +60,8 @@ export default function EmployeesScreen() {
   const { user, isAuthenticated } = useSelector(
     (state: RootState) => state.auth
   );
-  console.log("user: ", localStorage.getItem("userDetails"));
+  console.log("user: ", user);
+
   const { users, loading, error } = useSelector(
     (state: RootState) => state.user
   );
@@ -80,6 +81,7 @@ export default function EmployeesScreen() {
   const createdUserId = parseInt(localStorage.getItem("userId") || "1", 10);
   const itemsPerPage = 10;
   const empUserType = Number(status);
+  console.log("empUserType: ", empUserType);
   const categoryLabel = userTypeMap[empUserType] || "Employees";
   const citiesResult = citiesQuery(
     selectedState ? parseInt(selectedState) : undefined
@@ -92,18 +94,16 @@ export default function EmployeesScreen() {
   useEffect(() => {
     if (citiesResult.isError) {
       toast.error(
-        `Failed to fetch cities: ${
-          citiesResult.error?.message || "Unknown error"
+        `Failed to fetch cities: ${citiesResult.error?.message || "Unknown error"
         }`
       );
     }
   }, [citiesResult.isError, citiesResult.error]);
   useEffect(() => {
-    if (isAuthenticated && user?.id && empUserType) {
-      dispatch({
-        type: "user/getUsersByType/fulfilled",
-        payload: mockUsers.filter((u) => u.user_type === empUserType),
-      });
+    if (isAuthenticated && user?.
+      user_id
+      && empUserType) {getUsersByType
+    dispatch(getUsersByType(user?.user_id,createdUserId));
     }
     return () => {
       dispatch(clearUsers());
@@ -128,9 +128,9 @@ export default function EmployeesScreen() {
       const matchesState =
         !selectedState ||
         user.state?.toLowerCase() ===
-          states
-            .find((s) => s.value.toString() === selectedState)
-            ?.label.toLowerCase();
+        states
+          .find((s) => s.value.toString() === selectedState)
+          ?.label.toLowerCase();
       const matchesCity =
         !selectedCity ||
         (citiesResult.data &&
