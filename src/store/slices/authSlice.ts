@@ -148,7 +148,7 @@ export const loginUser = createAsyncThunk(
   "auth/loginUser",
   async (credentials: LoginRequest, { rejectWithValue, dispatch }) => {
     try {
-      const promise = ngrokAxiosInstance.post<LoginResponse>("/meetCRM/v2/auth/authCRMLogin", {
+      const promise = ngrokAxiosInstance.post<LoginResponse>("/meetCRM/v2/auth/authCRMLogin", { // meetCRM/v2/auth/authenticate?user_id=1070
         mobile: credentials.mobile,
       });
       toast.promise(promise, {
