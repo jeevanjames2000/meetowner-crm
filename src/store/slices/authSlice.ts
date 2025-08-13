@@ -224,6 +224,53 @@ export const sendUnifiedOtp = createAsyncThunk(
     }
   }
 );
+export const getUserById = createAsyncThunk<
+  { user: User; token: string },
+  { userId: number; token: string },
+  { rejectValue: string }
+>(
+  "auth/v1/getUserById",
+  async ({ userId, token }, { rejectWithValue }) => {
+    
+    try {
+      const response = await ngrokAxiosInstance.get<{ user: User }>(
+        `/auth/v1/getUserById?user_id=${userId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (!response.data.user) {
+        return rejectWithValue("User not found");
+      }
+
+      return { user: response.data.user, token };
+    } catch (error) {
+      const axiosError = error as AxiosError<ErrorResponse>;
+      console.error("Get user by ID error:", axiosError);
+      if (axiosError.response) {
+        const status = axiosError.response.status;
+        switch (status) {
+          case 401:
+            return rejectWithValue("Unauthorized: Invalid or expired token");
+          case 404:
+            return rejectWithValue("User not found");
+          case 500:
+            return rejectWithValue("Server error. Please try again later.");
+          default:
+            return rejectWithValue(
+              axiosError.response.data?.message || "Failed to fetch user"
+            );
+        }
+      }
+      return rejectWithValue("Network error. Please check your connection and try again.");
+    }
+  }
+);
+
 export const verifyOtpAdmin = createAsyncThunk(
   "auth/verifyOtpAdmin",
   async ({ mobile, otp }: VerifyOtpRequest, { rejectWithValue,  getState }) => {
@@ -467,6 +514,22 @@ const authSlice = createSlice({
         state.otp = null;
         localStorage.clear();
       })
+        .addCase(getUserById.pending, (state) => {
+      state.loading = true;
+      state.error = null;
+    })
+    .addCase(getUserById.fulfilled, (state, action) => {
+      state.loading = false;
+      state.isAuthenticated = true;
+      state.user = action.payload.user;
+      state.token = action.payload.token;
+      state.error = null;
+    
+    })
+    .addCase(getUserById.rejected, (state, action) => {
+      state.loading = false;
+      state.error = action.payload as string;
+    })
       .addCase(getAllUsersCount.pending, (state) => {
         state.loading = true;
         state.error = null;

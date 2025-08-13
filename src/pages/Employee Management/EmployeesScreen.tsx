@@ -27,7 +27,7 @@ import { Link, useNavigate, useParams } from "react-router";
 const mockUsers = [
   {
     id: 4,
-    name: "s",
+    name: "sdf",
     mobile: "6302816551",
     email: "jeevanjames2000@gmail.com",
     designation: "5",
@@ -60,7 +60,7 @@ export default function EmployeesScreen() {
   const { user, isAuthenticated } = useSelector(
     (state: RootState) => state.auth
   );
-
+  console.log("user: ", localStorage.getItem("userDetails"));
   const { users, loading, error } = useSelector(
     (state: RootState) => state.user
   );
@@ -80,7 +80,6 @@ export default function EmployeesScreen() {
   const createdUserId = parseInt(localStorage.getItem("userId") || "1", 10);
   const itemsPerPage = 10;
   const empUserType = Number(status);
-
   const categoryLabel = userTypeMap[empUserType] || "Employees";
   const citiesResult = citiesQuery(
     selectedState ? parseInt(selectedState) : undefined
@@ -90,7 +89,6 @@ export default function EmployeesScreen() {
       dispatch(setCityDetails(citiesResult.data));
     }
   }, [citiesResult.data, dispatch]);
-
   useEffect(() => {
     if (citiesResult.isError) {
       toast.error(
@@ -102,13 +100,10 @@ export default function EmployeesScreen() {
   }, [citiesResult.isError, citiesResult.error]);
   useEffect(() => {
     if (isAuthenticated && user?.id && empUserType) {
-    dispatch(
-      getUsersByType({
-        created_user_id: user?.user_id
-,
-        user_type: empUserType,
-      })
-    );
+      dispatch({
+        type: "user/getUsersByType/fulfilled",
+        payload: mockUsers.filter((u) => u.user_type === empUserType),
+      });
     }
     return () => {
       dispatch(clearUsers());
