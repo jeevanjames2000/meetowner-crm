@@ -22,6 +22,7 @@ import MarkBookingPage from "./pages/Lead Management/MarkBookingDone";
 import AllCpLeadDetails from "./pages/Lead Management/CpLeads";
 import EmpLeads from "./pages/Lead Management/EmpLeads";
 import OpenLeads from "./pages/Lead Management/OpenLeads";
+import EditEmployee from "./pages/Employee Management/EditEmployee";
 const LeadsType = lazy(() => import("./pages/Lead Management/LeadsType"));
 
 export default function App() {
@@ -37,7 +38,7 @@ export default function App() {
         <Routes>
           <Route  element={<ProtectedRoute />}>
             <Route element={<AppLayout />}>
-              <Route index path="/"  element={<Home />} />
+              <Route index path="/" element={<Home />} />
 
               <Route path="/leads/:lead_in/:status" element={<LeadsType />} />
               <Route path="/openLeads" element={<OpenLeads />} />
@@ -57,10 +58,12 @@ export default function App() {
 
               <Route path="/employee/:status" element={<EmployeesScreen />} />
               <Route path="/create-employee" element={<CreateEmployee />} />
+              <Route path="/edit-employee/:status/:id" element={<EditEmployee />} />
               <Route
                 path="/employeedetails/:status/:id"
                 element={<EmployeeDetail />}
               />
+              
             </Route>
           </Route>
           <Route

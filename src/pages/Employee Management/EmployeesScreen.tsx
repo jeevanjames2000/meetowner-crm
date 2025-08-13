@@ -18,6 +18,7 @@ import {
   clearUsers,
   getUsersByType,
   deleteUser,
+  getUserProfile,
 } from "../../store/slices/userslice";
 import { getStatusDisplay } from "../../utils/statusdisplay";
 import ConfirmDeleteUserModal from "../../components/common/ConfirmDeleteUserModal";
@@ -62,7 +63,7 @@ export default function EmployeesScreen() {
     (state: RootState) => state.auth
   );
   console.log("authenticated: ", isAuthenticated);
-console.log("user:qqq ", user.user_id);
+  console.log("user:qqq ", user.user_id);
   const { users, loading, error } = useSelector(
     (state: RootState) => state.user
   );
@@ -80,8 +81,8 @@ console.log("user:qqq ", user.user_id);
   const [selectedState, setSelectedState] = useState<string | null>(null);
   const [selectedCity, setSelectedCity] = useState<string | null>(null);
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
-  const createdUserId =status ;
-  
+  const createdUserId = status;
+
   const itemsPerPage = 10;
   const empUserType = Number(status);
   console.log("empUserType: ", empUserType);
@@ -106,11 +107,11 @@ console.log("user:qqq ", user.user_id);
     if (isAuthenticated && user?.
       user_id
       && empUserType) {
-   
-   dispatch(getUsersByType({
-  created_user_id:user?.user_id  ,
-  user_type: createdUserId
-}));
+
+      dispatch(getUsersByType({
+        created_user_id: user?.user_id,
+        user_type: createdUserId
+      }));
 
     }
     return () => {
@@ -118,34 +119,34 @@ console.log("user:qqq ", user.user_id);
     };
   }, [isAuthenticated, user, empUserType, statusUpdated, dispatch]);
   const filteredUsers = users?.filter((user) => {
-  const matchesTextFilter = [
-    user.name,
-    user.mobile,
-    user.email,
-    user.city,
-    user.state,
-    user.pincode,
-  ]
-    .map((field) => field?.toLowerCase() || "")
-    .some((field) => field.includes(filterValue.toLowerCase()));
+    const matchesTextFilter = [
+      user.name,
+      user.mobile,
+      user.email,
+      user.city,
+      user.state,
+      user.pincode,
+    ]
+      .map((field) => field?.toLowerCase() || "")
+      .some((field) => field.includes(filterValue.toLowerCase()));
 
-  const userCreatedDate = formatDate(user.created_date);
+    const userCreatedDate = formatDate(user.created_date);
 
-  const matchesCreatedDate =
-    (!createdDate || userCreatedDate >= createdDate) &&
-    (!createdEndDate || userCreatedDate <= createdEndDate);
+    const matchesCreatedDate =
+      (!createdDate || userCreatedDate >= createdDate) &&
+      (!createdEndDate || userCreatedDate <= createdEndDate);
 
-  // Match state
-  const stateLabel = states.find((s) => s.value.toString() === selectedState)?.label || "";
-  console.log("stateLabel: ", stateLabel);
-  const matchesState = !selectedState || user.state?.toLowerCase() === stateLabel.toLowerCase();
+    // Match state
+    const stateLabel = states.find((s) => s.value.toString() === selectedState)?.label || "";
+    console.log("stateLabel: ", stateLabel);
+    const matchesState = !selectedState || user.state?.toLowerCase() === stateLabel.toLowerCase();
 
-  // Match city
-  const cityLabel = citiesResult.data?.find((c) => c.value.toString() === selectedCity)?.label || "";
-  const matchesCity = !selectedCity || user.city?.toLowerCase() === cityLabel.toLowerCase();
+    // Match city
+    const cityLabel = citiesResult.data?.find((c) => c.value.toString() === selectedCity)?.label || "";
+    const matchesCity = !selectedCity || user.city?.toLowerCase() === cityLabel.toLowerCase();
 
-  return matchesTextFilter && matchesCreatedDate && matchesState && matchesCity;
-}) || [];
+    return matchesTextFilter && matchesCreatedDate && matchesState && matchesCity;
+  }) || [];
 
   const totalItems = filteredUsers.length;
   const totalPages = Math.ceil(totalItems / itemsPerPage);
@@ -154,18 +155,17 @@ console.log("user:qqq ", user.user_id);
   const paginatedUsers = filteredUsers.slice(startIndex, endIndex);
   const handleViewProfile = (id: number) => {
     if (isAuthenticated && user?.user_id && empUserType) {
+      dispatch(getUserProfile({ user_id: Number(id) }));
       navigate(`/employeedetails/${empUserType}/${id}`);
+
     }
   };
   const handleConfirmDelete = async () => {
-    if (selectedUser && user?.user_type) {
+    if (selectedUser) {
+      console
       try {
         await dispatch(
-          deleteUser({
-            id: selectedUser.id,
-            created_user_id: createdUserId,
-            created_user_type: user.user_type,
-          })
+          deleteUser({ id: selectedUser.id }) // pass correct id
         ).unwrap();
         setStatusUpdated(!statusUpdated);
         setIsDeleteModalOpen(false);
@@ -221,6 +221,21 @@ console.log("user:qqq ", user.user_id);
     }
     handleViewProfile(selectedUserId);
   };
+
+  const handleBulkUpdate = () => {
+   
+  if (selectedUserId === null) {
+    toast.error("Please select an employee.");
+    return;
+  }
+  
+ dispatch(getUserProfile({ user_id: selectedUserId}));
+  const userToEdit = paginatedUsers.find((u) => u.id === selectedUserId);
+  if (userToEdit) {
+    navigate(`/edit-employee/${empUserType}/${selectedUserId}`, { state: { employee: userToEdit } });
+  }
+};
+
   const handleBulkDelete = () => {
     if (selectedUserId === null) {
       toast.error("Please select an employee.");
@@ -264,6 +279,17 @@ console.log("user:qqq ", user.user_id);
         >
           View Profile
         </Button>
+
+        <Button
+          variant="primary"
+          onClick={handleBulkUpdate}
+          disabled={selectedUserId === null}
+          className="px-4 py-1 h-10"
+        >
+          Update Profile
+        </Button>
+
+
         <Button
           variant="primary"
           onClick={handleBulkDelete}

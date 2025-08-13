@@ -41,18 +41,19 @@ const EmployeeDetail = () => {
   console.log("user:", user?.
 user_id);
   const { selectedUser, loading, error } = useSelector((state: RootState) => state.user);
+  console.log("selectedUser: ", selectedUser);
   const empUserType = Number(status);
 
 
   useEffect(() => {
     if (isAuthenticated && user?.user_id) {
-  dispatch(getUserProfile({ user_id: user.user_id }));
+  dispatch(getUserProfile({ user_id: id}));
 }
 
     return () => {
       dispatch(clearUsers());
     };
-  }, [isAuthenticated, user, id, empUserType, dispatch]);
+  }, [isAuthenticated, user, id,dispatch]);
 
 
 
@@ -70,7 +71,11 @@ user_id);
           variant="primary"
           size="sm"
           onClick={() =>
-            dispatch(getUserById({ admin_user_id: user!.id, emp_user_type: empUserType, emp_user_id: Number(id) }))
+            dispatch(
+              getUserById({
+                user_id: id,
+              })
+            )
           }
           className="ml-4"
         >

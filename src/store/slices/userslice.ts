@@ -187,18 +187,11 @@ export const getUserById = createAsyncThunk<
   "user/getUserById",
   async ({ admin_user_id, emp_user_type, emp_user_id }, { rejectWithValue }) => {
     try {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        return rejectWithValue("No authentication token found. Please log in.");
-      }
+    
 
       const response = await ngrokAxiosInstance.get<UsersResponse>(
         `/api/v1/getUsersTypesByBuilder?admin_user_id=${admin_user_id}&emp_user_type=${emp_user_type}&emp_user_id=${emp_user_id}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
+        
       );
 
       if (!response.data.data || response.data.data.length === 0) {
@@ -298,11 +291,11 @@ export const getUserProfile = createAsyncThunk<
       );
       console.log("getUserProfile response:", response.data);
 
-      if (!response.data.data || response.data.data.length === 0) {
-        return rejectWithValue("User not found");
-      }
+      // if (!response.data.data || response.data.data.length === 0) {
+      //   return rejectWithValue("User not found");
+      // }
 
-      return response.data.data[0]; // Return the first user from the data array
+      return response.data; // Return the first user from the data array
     } catch (error) {
       const axiosError = error as AxiosError<ErrorResponse>;
       console.error("Get user profile error:", axiosError);
@@ -332,23 +325,16 @@ export const deleteUser = createAsyncThunk<
   { rejectValue: string }
 >(
   "user/deleteUser",
-  async ({ id, created_user_id, created_user_type }, { rejectWithValue }) => {
+  async ({ id }, { rejectWithValue }) => {
+    console.log("deleteUser called with id:", id);
     try {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        return rejectWithValue("No authentication token found. Please log in.");
-      }
+     
 
       const response = await ngrokAxiosInstance.delete<DeleteUserResponse>(
-        `/api/v1/users/${id}`,
-        {
-          data: { created_user_id, created_user_type },
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
+        `/meetCRM/v2/deleteEmp?user_id=${id}`,
+         
       );
+      console.log("deleteUser response:", response);
 
       toast.success(response.data.message);
       return response.data;
@@ -452,19 +438,21 @@ const userSlice = createSlice({
         state.error = action.payload as string;
         toast.error(action.payload as string);
       })
-      .addCase(getUserProfile.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(getUserProfile.fulfilled, (state, action) => {
-        state.loading = false;
-        state.selectedUser = action.payload;
-      })
-      .addCase(getUserProfile.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload as string;
-        toast.error(action.payload as string);
-      })
+     .addCase(getUserProfile.pending, (state) => {
+      console.log("pending")
+      state.loading = true;
+      state.error = null;
+    })
+    .addCase(getUserProfile.fulfilled, (state, action) => {
+      state.loading = false;
+      console.log("::::::::::::::::::::::::::::::::::::::::::",action.payload);
+      state.selectedUser = action.payload; // ✅ store here
+    })
+    .addCase(getUserProfile.rejected, (state, action) => {
+      console.log("rejected")
+      state.loading = false;
+      state.error = action.payload || "Failed to fetch user profile";
+    })
       .addCase(deleteUser.pending, (state) => {
         state.loading = true;
         state.error = null;
