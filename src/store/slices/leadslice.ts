@@ -448,12 +448,12 @@ export const getLeadSources = createAsyncThunk<
   }
 );
 
-  export const insertLead = createAsyncThunk<
+export const insertLead = createAsyncThunk<
   InsertLeadResponse,
   {
     unique_property_id: string;
     fullname: string;
-    email: string;
+    email: string | null;
     mobile: string;
     sub_type: string;
     property_for: string;
@@ -477,6 +477,11 @@ export const getLeadSources = createAsyncThunk<
   "lead/insertLead",
   async (leadData, { rejectWithValue }) => {
     try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        return rejectWithValue("No authentication token found. Please log in.");
+      }
+
       const payload: any = {
         unique_property_id: leadData.unique_property_id,
         fullname: leadData.fullname,
@@ -513,15 +518,21 @@ export const getLeadSources = createAsyncThunk<
       const response = await ngrokAxiosInstance.post<InsertLeadResponse>(
         `/meetCRM/v2/leads/createLead`,
         payload,
-        
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
       );
-      console.log("response: ", response);
 
-      if (response.data.status !== 201) {
+      console.log("insertLead response:", response.data); // Log response for debugging
+
+      // Check HTTP status for success
+      if (response.status === 201) {
+        return response.data; // Return the response data for fulfilled case
+      } else {
         return rejectWithValue(response.data.message || "Failed to insert lead");
       }
-
-      return response.data;
     } catch (error) {
       const axiosError = error as AxiosError<ErrorResponse>;
       console.error("Insert lead error:", {
@@ -546,7 +557,6 @@ export const getLeadSources = createAsyncThunk<
     }
   }
 );
-
 export const assignLeadToEmployee = createAsyncThunk<
   AssignLeadResponse,
   {
@@ -867,52 +877,14 @@ const leadSlice = createSlice({
         state.loading = false;
         state.error = action.payload as string;
       })
-       .addCase(insertLead.pending, (state) => {
+      .addCase(insertLead.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
       .addCase(insertLead.fulfilled, (state, action) => {
         state.loading = false;
-        // Optimistically add the new lead to openLeads
-        if (action.payload.data) {
-          const newLead: PropertyEnquiry = {
-            id: action.payload.lead_id,
-            unique_property_id: action.payload.data.unique_property_id,
-            fullname: action.payload.data.fullname,
-            email: action.payload.data.email,
-            mobile: action.payload.data.mobile,
-            created_date: new Date().toISOString(),
-            updated_date: new Date().toISOString(),
-            created_time: new Date().toISOString(),
-            sent_status: 0,
-            sub_type: action.payload.data.sub_type,
-            property_for: action.payload.data.property_for,
-            property_type: null,
-            property_in: action.payload.data.property_in,
-            state_id: String(action.payload.data.state_id),
-            city_id: String(action.payload.data.city_id),
-            location_id: "",
-            property_cost: action.payload.data.budget,
-            bedrooms: "",
-            bathroom: 0,
-            facing: "",
-            car_parking: 0,
-            bike_parking: 0,
-            description: "",
-            image: "",
-            google_address: action.payload.data.google_address,
-            property_name: action.payload.data.property_name,
-            userDetails: {
-              id: action.payload.data.lead_added_user_id,
-              name: action.payload.data.fullname,
-              email: action.payload.data.email,
-              mobile: action.payload.data.mobile,
-            },
-          };
-          state.openLeads = state.openLeads
-            ? [...state.openLeads, newLead]
-            : [newLead];
-        }
+        state.error = null;
+        // Optionally update state if needed, but handle in handleBulkAssign
       })
       .addCase(insertLead.rejected, (state, action) => {
         state.loading = false;
