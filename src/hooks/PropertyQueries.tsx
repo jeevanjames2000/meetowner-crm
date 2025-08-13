@@ -35,17 +35,17 @@ export const usePropertyQueries = () => {
   const dispatch = useDispatch();
 
   // States Query
-  const statesQuery = useQuery<State[], AxiosError<ErrorResponse>>({
-    queryKey: ['states'],
-    queryFn: async () => {
-      const response = await ngrokAxiosInstance.get<StatesResponse>('/api/v1/states');
-      if (response.data.status !== 'success') {
-        throw new Error(response.data.message || 'Failed to fetch states');
-      }
-      return response.data.states;
-    },
-    staleTime: 2 * 24 * 60 * 60 * 1000, // 2 days
-  });
+  // const statesQuery = useQuery<State[], AxiosError<ErrorResponse>>({
+  //   queryKey: ['states'],
+  //   queryFn: async () => {
+  //     const response = await ngrokAxiosInstance.get<StatesResponse>('/api/v1/states');
+  //     if (response.data.status !== 'success') {
+  //       throw new Error(response.data.message || 'Failed to fetch states');
+  //     }
+  //     return response.data.states;
+  //   },
+  //   staleTime: 2 * 24 * 60 * 60 * 1000, // 2 days
+  // });
 
   // Cities Query (requires stateId)
   const citiesQuery = (stateId?: number) =>
@@ -65,15 +65,10 @@ export const usePropertyQueries = () => {
       enabled: !!stateId, // Only fetch when stateId is provided
     });
 
-  // Dispatch states to Redux
-  useEffect(() => {
-    if (statesQuery.data) {
-      dispatch(setStates(statesQuery.data));
-    }
-  }, [statesQuery.data, dispatch]);
+ 
 
   return {
-    statesQuery,
+   
     citiesQuery,
   };
 };

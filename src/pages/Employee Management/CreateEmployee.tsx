@@ -153,10 +153,7 @@ const CreateEmployee = () => {
       toast.error("Please log in to access this page");
       return;
     }
-    if (user.user_type !== 2) {
-      navigate("/");
-      toast.error("Access denied: Only builders can create employees");
-    }
+   
   }, [isAuthenticated, user, navigate]);
   const debouncedFetchLocalities = useCallback(
     debounce((city: string, state: string, query: string) => {
