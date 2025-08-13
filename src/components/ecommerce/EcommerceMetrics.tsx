@@ -73,12 +73,12 @@ export default function Home() {
     "7",
   ];
   const filteredCounts = useMemo(() => {
-    console.log("userCounts:", userCounts);
+   
     const counts = allowedUserTypes.map((userType) => {
       const found = userCounts?.find((item) => item.user_type === userType);
       return found || { user_type: userType, count: 0 };
     });
-    console.log("filteredCounts:", counts);
+    
     return counts;
   }, [userCounts]);
   return (

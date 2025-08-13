@@ -150,20 +150,11 @@ export const getUsersByType = createAsyncThunk<
   "user/getUsersByType",
   async ({ created_user_id,user_type }, { rejectWithValue }) => {
     try {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        return rejectWithValue("No authentication token found. Please log in.");
-      }
-
       const response = await ngrokAxiosInstance.get<UsersResponse>(
         `/meetCRM/v2/getUsersTypeandCreatedBy?created_user_id=${created_user_id}&user_type=${user_type}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
+       
       );
-
+console.log("getUsersByType response:", response.data);
       return response.data;
     } catch (error) {
       const axiosError = error as AxiosError<ErrorResponse>;

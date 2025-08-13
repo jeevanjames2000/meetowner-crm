@@ -7,7 +7,7 @@ import { jwtDecode } from "jwt-decode";
 import toast from "react-hot-toast";
 
 interface JwtPayload {
-  userId: number;
+  user_id: number;
 }
 const ProtectedRoute: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -17,7 +17,6 @@ const ProtectedRoute: React.FC = () => {
   const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
   const queryToken = searchParams.get("url");
-  console.log("queryToken: ", queryToken);
 
   const [hasProcessedToken, setHasProcessedToken] = useState(false);
 
@@ -26,17 +25,22 @@ const ProtectedRoute: React.FC = () => {
     if (queryToken && !hasProcessedToken) {
       try {
         const decoded: JwtPayload = jwtDecode<JwtPayload>(queryToken);
-        const userId = decoded.userId;
-        console.log("userId: ", userId);
+
+        const userId = decoded.user_id;
+
         if (userId) {
           dispatch(getUserById({ userId, token: queryToken }))
             .unwrap()
-            .then(() => {
-              setHasProcessedToken(true); // Prevent re-processing
+            .then((res) => {
+              setHasProcessedToken(true);
+              if (res?.user) {
+                window.history.replaceState({}, "", "/"); // remove query params
+              }
             })
             .catch((err) => {
               toast.error(err || "Failed to authenticate with token");
             });
+
         } else {
           toast.error("Invalid token: No userId found");
         }

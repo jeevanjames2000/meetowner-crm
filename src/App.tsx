@@ -35,9 +35,9 @@ export default function App() {
         <ScrollToTop />
 
         <Routes>
-          <Route element={<ProtectedRoute />}>
+          <Route  element={<ProtectedRoute />}>
             <Route element={<AppLayout />}>
-              <Route index path="/" element={<Home />} />
+              <Route index path="/"  element={<Home />} />
 
               <Route path="/leads/:lead_in/:status" element={<LeadsType />} />
               <Route path="/openLeads" element={<OpenLeads />} />
