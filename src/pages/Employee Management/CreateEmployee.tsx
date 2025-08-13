@@ -57,6 +57,8 @@ const CreateEmployee = () => {
   const { cities, states, localities } = useSelector(
     (state: RootState) => state.places
   );
+  console.log("states: ", states);
+  console.log("cities: ", cities);
   const [isLocalityDropdownOpen, setIsLocalityDropdownOpen] = useState(false);
   const [formData, setFormData] = useState<FormData>({
     name: "",

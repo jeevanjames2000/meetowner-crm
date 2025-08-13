@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import Select from "../form/Select";
 import DatePicker from "../form/date-picker";
 import Button from "../ui/button/Button";
@@ -7,9 +7,15 @@ import { usePropertyQueries } from "../../hooks/PropertyQueries";
 import { setCityDetails } from "../../store/slices/propertyDetails";
 import { RootState, AppDispatch } from "../../store/store";
 import Dropdown from "../form/Dropdown";
+import axios from "axios";
 interface SelectOption {
   value: string;
   label: string;
+}
+// Define the city type based on API structure
+interface City {
+  city: string;
+  status: string;
 }
 interface FilterBarProps {
   showUserTypeFilter?: boolean;
@@ -70,30 +76,65 @@ const FilterBar: React.FC<FilterBarProps> = ({
   const dispatch = useDispatch<AppDispatch>();
   const { states } = useSelector((state: RootState) => state.property);
   const { citiesQuery } = usePropertyQueries();
-
-  const citiesResult = citiesQuery(
-    selectedState ? parseInt(selectedState) : undefined
-  );
-  const stateOptions =
-    states?.map((state: any) => ({
-      value: state.value.toString(),
-      text: state.label,
-    })) || [];
+  const [citiesList, setCitiesList] = useState<string[]>([]);
+  const [stateOptions, setStateOptions] = useState<SelectOption[]>([]);
+  const [cityOptions, setCityOptions] = useState<SelectOption[]>([]);
 
 
-  const cityOptions =
-    citiesResult?.data?.map((city: any) => ({
-      value: city.label,
-      text: city.label,
-    })) || [];
 
+
+
+  // Fetch States on mount
   useEffect(() => {
-    if (citiesResult.data) {
-      dispatch(setCityDetails(citiesResult.data));
-    }
-  },
-    [citiesResult.data, dispatch]);
-  
+    const fetchStates = async () => {
+      try {
+        const res = await axios.get<{ state: string; state_id: number; status: string }[]>(
+          "https://api.meetowner.in/api/v1/getAllStates"
+        );
+        console.log("response:", res);
+        const activeStates = res.data.filter((s) => s.status === "active");
+
+        console.log("activeStates:::::", activeStates);
+        setStateOptions(
+          activeStates.map((s) => ({
+            value: s.state,
+            label: s.state,
+          }))
+        );
+      } catch (err) {
+        console.error("Error fetching states:", err);
+      }
+    };
+    fetchStates();
+  }, []);
+
+  // Fetch Cities when state changes
+  useEffect(() => {
+    const fetchCitiesByState = async () => {
+      console.log("selectedState::::::::::::::::::::::::::::::::::::::", selectedState);
+      if (!selectedState) {
+        setCityOptions([]);
+        return;
+      }
+      try {
+        const res = await axios.get<{ city: string; status: string }[]>(
+          `https://api.meetowner.in/api/v1/getAllCities?state_id=${selectedState}`
+        );
+        console.log("response:", res);
+        const activeCities = res.data.filter((c) => c.state === selectedState);
+        console.log("activeCities:::::", activeCities);
+        setCityOptions(
+          activeCities.map((c) => ({
+            value: c.city,
+            label: c.city,
+          }))
+        );
+      } catch (err) {
+        console.error("Error fetching cities:", err);
+      }
+    };
+    fetchCitiesByState();
+  }, [selectedState]);
 
   const handleCreatedDateChange = (selectedDates: Date[]) => {
     const dateObj = selectedDates[0];
@@ -161,35 +202,32 @@ const FilterBar: React.FC<FilterBarProps> = ({
             />
           </div>
         )}
-        {showStateFilter && stateOptions.length > 0 && (
-          <div className="w-[1/4] flex-shrink-0">
-            <Dropdown
-              id="state"
-              options={stateOptions}
-              value={selectedState || ""}
-              onChange={(value: string, text: string) => {
-                onStateChange?.(value || null);
-                if (value !== selectedState) {
-                  onCityChange?.(null);
-                }
-              }}
-              placeholder="state..."
-            />
+        {(
+            <div className="w-[100px] flex-shrink-0">
+          <Dropdown
+            id="state"
+            options={stateOptions.map(s => ({ value: s.value, text: s.label }))}
+            value={selectedState || ""}
+            onChange={(value) => {
+              onStateChange?.(value || null);
+              if (value !== selectedState) {
+                onCityChange?.(null);
+              }
+            }}
+            placeholder="state..."
+          />
           </div>
         )}
         {showCityFilter && (
-          <div className="w-[1/4] flex-shrink-0">
-            <Dropdown
-              id="city"
-              options={cityOptions}
-              value={selectedCity || ""}
-              onChange={(value: string, text: string) => {
-                onCityChange?.(value || null); // 'value' will be the city name (label)
-              }}
-              placeholder="city..."
-              disabled={!selectedState}
-            />
-
+            <div className="w-[100px] flex-shrink-0">
+          <Dropdown
+            id="city"
+            options={cityOptions.map(c => ({ value: c.value, text: c.label }))}
+            value={selectedCity || ""}
+            onChange={(value) => onCityChange?.(value || null)}
+            placeholder="city..."
+            disabled={!selectedState}
+          />
           </div>
         )}
         <div className="flex items-center gap-2">

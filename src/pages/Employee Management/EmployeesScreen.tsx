@@ -55,12 +55,14 @@ const formatDate = (dateString: string): string => {
 };
 export default function EmployeesScreen() {
   const { status } = useParams<{ status: string }>();
+  console.log("status: ", status);
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
   const { user, isAuthenticated } = useSelector(
     (state: RootState) => state.auth
   );
-
+  console.log("authenticated: ", isAuthenticated);
+console.log("user:qqq ", user.user_id);
   const { users, loading, error } = useSelector(
     (state: RootState) => state.user
   );
@@ -78,7 +80,8 @@ export default function EmployeesScreen() {
   const [selectedState, setSelectedState] = useState<string | null>(null);
   const [selectedCity, setSelectedCity] = useState<string | null>(null);
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
-  const createdUserId = parseInt(localStorage.getItem("userId") || "1", 10);
+  const createdUserId =status ;
+  
   const itemsPerPage = 10;
   const empUserType = Number(status);
   console.log("empUserType: ", empUserType);
@@ -102,45 +105,48 @@ export default function EmployeesScreen() {
   useEffect(() => {
     if (isAuthenticated && user?.
       user_id
-      && empUserType) {getUsersByType
-    dispatch(getUsersByType(user?.user_id,createdUserId));
+      && empUserType) {
+   
+   dispatch(getUsersByType({
+  created_user_id:user?.user_id  ,
+  user_type: createdUserId
+}));
+
     }
     return () => {
       dispatch(clearUsers());
     };
   }, [isAuthenticated, user, empUserType, statusUpdated, dispatch]);
-  const filteredUsers =
-    users?.filter((user) => {
-      const matchesTextFilter = [
-        user.name,
-        user.mobile,
-        user.email,
-        user.city,
-        user.state,
-        user.pincode,
-      ]
-        .map((field) => field?.toLowerCase() || "")
-        .some((field) => field.includes(filterValue.toLowerCase()));
-      const userCreatedDate = formatDate(user.created_date);
-      const matchesCreatedDate =
-        (!createdDate || userCreatedDate >= createdDate) &&
-        (!createdEndDate || userCreatedDate <= createdEndDate);
-      const matchesState =
-        !selectedState ||
-        user.state?.toLowerCase() ===
-        states
-          .find((s) => s.value.toString() === selectedState)
-          ?.label.toLowerCase();
-      const matchesCity =
-        !selectedCity ||
-        (citiesResult.data &&
-          citiesResult.data
-            .find((c) => c.value.toString() === selectedCity)
-            ?.label.toLowerCase() === user.city?.toLowerCase());
-      return (
-        matchesTextFilter && matchesCreatedDate && matchesState && matchesCity
-      );
-    }) || [];
+  const filteredUsers = users?.filter((user) => {
+  const matchesTextFilter = [
+    user.name,
+    user.mobile,
+    user.email,
+    user.city,
+    user.state,
+    user.pincode,
+  ]
+    .map((field) => field?.toLowerCase() || "")
+    .some((field) => field.includes(filterValue.toLowerCase()));
+
+  const userCreatedDate = formatDate(user.created_date);
+
+  const matchesCreatedDate =
+    (!createdDate || userCreatedDate >= createdDate) &&
+    (!createdEndDate || userCreatedDate <= createdEndDate);
+
+  // Match state
+  const stateLabel = states.find((s) => s.value.toString() === selectedState)?.label || "";
+  console.log("stateLabel: ", stateLabel);
+  const matchesState = !selectedState || user.state?.toLowerCase() === stateLabel.toLowerCase();
+
+  // Match city
+  const cityLabel = citiesResult.data?.find((c) => c.value.toString() === selectedCity)?.label || "";
+  const matchesCity = !selectedCity || user.city?.toLowerCase() === cityLabel.toLowerCase();
+
+  return matchesTextFilter && matchesCreatedDate && matchesState && matchesCity;
+}) || [];
+
   const totalItems = filteredUsers.length;
   const totalPages = Math.ceil(totalItems / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;

@@ -148,7 +148,9 @@ export const getUsersByType = createAsyncThunk<
   { rejectValue: string }
 >(
   "user/getUsersByType",
-  async ({ created_user_id,user_type }, { rejectWithValue }) => {
+  async ({ created_user_id, user_type }, { rejectWithValue }) => {
+    console.log("getUsersByType called with created_user_id:", created_user_id);
+    console.log("getUsersByType called with user_type:", user_type);
     try {
       const response = await ngrokAxiosInstance.get<UsersResponse>(
         `/meetCRM/v2/getUsersTypeandCreatedBy?created_user_id=${created_user_id}&user_type=${user_type}`,

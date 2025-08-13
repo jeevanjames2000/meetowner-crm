@@ -88,12 +88,14 @@ const OpenLeads: React.FC = () => {
   const { lead_in, status } = useParams<{ lead_in: string; status: string }>();
   const dispatch = useDispatch<AppDispatch>();
   const { user } = useSelector((state: RootState) => state.auth);
+  console.log("user: ", user);
   const { openLeads, loading, error } = useSelector(
     (state: RootState) => state.lead
   );
 
   const userId =
-    user?.id || parseInt(localStorage.getItem("userId") || "96", 10);
+    user?.user_id
+    || parseInt(localStorage.getItem("userId") || "96", 10);
   const itemsPerPage = 10;
   const statusId = parseInt(status || "0", 10);
 
@@ -130,13 +132,13 @@ const OpenLeads: React.FC = () => {
         const matchesSearch = !searchQuery
           ? true
           : item.fullname.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            item.mobile.includes(searchQuery) ||
-            (item.email &&
-              item.email.toLowerCase().includes(searchQuery.toLowerCase())) ||
-            item.property_name
-              .toLowerCase()
-              .includes(searchQuery.toLowerCase()) ||
-            item.sub_type.toLowerCase().includes(searchQuery.toLowerCase());
+          item.mobile.includes(searchQuery) ||
+          (item.email &&
+            item.email.toLowerCase().includes(searchQuery.toLowerCase())) ||
+          item.property_name
+            .toLowerCase()
+            .includes(searchQuery.toLowerCase()) ||
+          item.sub_type.toLowerCase().includes(searchQuery.toLowerCase());
 
         const matchesUserType = !selectedUserType
           ? true
