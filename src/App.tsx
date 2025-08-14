@@ -23,6 +23,7 @@ import AllCpLeadDetails from "./pages/Lead Management/CpLeads";
 import EmpLeads from "./pages/Lead Management/EmpLeads";
 import OpenLeads from "./pages/Lead Management/OpenLeads";
 import TodayLeads from "./pages/Lead Management/TodayLeads";
+import EditEmployee from "./pages/Employee Management/EditEmployee";
 const LeadsType = lazy(() => import("./pages/Lead Management/LeadsType"));
 
 export default function App() {

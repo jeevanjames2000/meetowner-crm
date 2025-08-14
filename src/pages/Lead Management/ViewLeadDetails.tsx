@@ -64,8 +64,8 @@ const ViewLeadDetails = () => {
   }, [property, navigate, dispatch, isAuthenticated, user]);
 
   useEffect(() => {
-  dispatch(getLeadSources());
-}, [dispatch]);
+    dispatch(getLeadSources());
+  }, [dispatch]);
 
   const lead = typeof property === 'number' ? leads?.find((l) => l.lead_id === property) : property;
 
@@ -96,17 +96,17 @@ const ViewLeadDetails = () => {
 
   const timeline: TimelineEvent[] = leadUpdates?.length
     ? leadUpdates.map((update: LeadUpdate, index: number) => ({
-        label: update.status_name || `Update ${index + 1}`,
-        timestamp: `${update.update_date} ${update.update_time}`,
-        status: update.status_id && lead.status_id && update.status_id <= lead.status_id ? 'completed' : 'pending',
-        description: update.feedback,
-        nextAction: update.next_action,
-        current: update.status_id === lead.status_id,
-        updatedEmpType: update.updated_by_emp_type,
-        updatedEmpId: update.updated_by_emp_id,
-        updatedEmpPhone: update.updated_emp_phone,
-        updatedEmpName: update.updated_by_emp_name,
-      }))
+      label: update.status_name || `Update ${index + 1}`,
+      timestamp: `${update.update_date} ${update.update_time}`,
+      status: update.status_id && lead.status_id && update.status_id <= lead.status_id ? 'completed' : 'pending',
+      description: update.feedback,
+      nextAction: update.next_action,
+      current: update.status_id === lead.status_id,
+      updatedEmpType: update.updated_by_emp_type,
+      updatedEmpId: update.updated_by_emp_id,
+      updatedEmpPhone: update.updated_emp_phone,
+      updatedEmpName: update.updated_by_emp_name,
+    }))
     : [];
 
   return (
@@ -142,14 +142,14 @@ const ViewLeadDetails = () => {
             <p>
               <strong>Budget:</strong> {lead.budget || 'N/A'}
             </p>
-        <p>
-  <strong>Lead Source:</strong>{" "}
-  {
-    leadSources?.find(
-      (source) => String(source.lead_source_id) === String(lead.lead_source_id)
-    )?.lead_source_name || lead.lead_source_id
-  }
-</p>   
+            <p>
+              <strong>Lead Source:</strong>{" "}
+              {
+                leadSources?.find(
+                  (source) => String(source.lead_source_id) === String(lead.lead_source_id)
+                )?.lead_source_name || lead.lead_source_id
+              }
+            </p>
 
 
             <p>
@@ -164,7 +164,7 @@ const ViewLeadDetails = () => {
             <p>
               <strong>city:</strong> {lead.city}
             </p>
-             <p>
+            <p>
               <strong>state:</strong> {lead.state}
             </p>
           </div>
