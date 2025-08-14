@@ -2,13 +2,10 @@ import React from "react";
 import { CheckCircle, Clock } from "lucide-react";
 
 const allDesignationOptions = [
-  { value: "1", text: "Admin" }, 
-  { value: "2", text: "Builder" }, // Added for completeness
-  { value: "3", text: "Channel Partner" },
-  { value: "4", text: "Sales Manager" },
-  { value: "5", text: "Telecaller" },
-  { value: "6", text: "Marketing Agent" },
-  { value: "7", text: "Receptionists" },
+  { value: "1", text: "Builder" },
+  { value: "2", text: "Sales Manager" },
+  { value: "3", text: "Telecaller" },
+  { value: "4", text: "Marketing Agent" },
 ];
 
 export interface TimelineEvent {
@@ -25,14 +22,21 @@ export interface TimelineEvent {
 }
 
 const Timeline: React.FC<{ data?: TimelineEvent[] }> = ({ data = [] }) => {
+  console.log("data: ", data);
   if (!Array.isArray(data) || data.length === 0) {
-    return <p className="text-sm text-gray-500 dark:text-gray-400">No timeline data available.</p>;
+    return (
+      <p className="text-sm text-gray-500 dark:text-gray-400">
+        No timeline data available.
+      </p>
+    );
   }
 
   const getDesignation = (empType?: string | number) => {
-    if (!empType) return "Unknown Designation"; 
-    const designation = allDesignationOptions.find((emp) => emp.value === empType.toString())?.text;
-    return designation || "Unknown Designation"; 
+    if (!empType) return "Unknown Designation";
+    const designation = allDesignationOptions.find(
+      (emp) => emp.value === empType.toString()
+    )?.text;
+    return designation || "Unknown Designation";
   };
 
   return (
@@ -49,21 +53,30 @@ const Timeline: React.FC<{ data?: TimelineEvent[] }> = ({ data = [] }) => {
           <h3 className="flex items-center mb-1 text-sm font-semibold text-gray-900 dark:text-white">
             {event.label}
             {event.current && (
-              <span className="ml-2 text-green-600 text-xs font-medium">(Current)</span>
+              <span className="ml-2 text-green-600 text-xs font-medium">
+                (Current)
+              </span>
             )}
           </h3>
           <time className="block mb-2 text-xs text-gray-400 dark:text-gray-500">
             {event.timestamp}
           </time>
           {event.description && (
-            <p className="text-sm text-gray-600 dark:text-gray-300">{event.description}</p>
+            <p className="text-sm text-gray-600 dark:text-gray-300">
+              {event.description}
+            </p>
           )}
           {event.nextAction && (
-            <p className="text-sm text-gray-600 dark:text-gray-300">{event.nextAction}</p>
+            <p className="text-sm text-gray-600 dark:text-gray-300">
+              {event.nextAction}
+            </p>
           )}
-          {event.updatedEmpType && getDesignation(event.updatedEmpType) !== "Unknown Designation" && (
-            <p className="text-sm text-gray-600 dark:text-gray-300">{getDesignation(event.updatedEmpType)}</p>
-          )}
+          {event.updatedEmpType &&
+            getDesignation(event.updatedEmpType) !== "Unknown Designation" && (
+              <p className="text-sm text-gray-600 dark:text-gray-300">
+                {getDesignation(event.updatedEmpType)}
+              </p>
+            )}
           {event.updatedEmpName && event.updatedEmpPhone && (
             <p className="text-sm text-gray-600 dark:text-gray-300">
               {event.updatedEmpName} | {event.updatedEmpPhone}

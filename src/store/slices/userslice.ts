@@ -4,8 +4,6 @@ import { toast } from "react-hot-toast";
 import ngrokAxiosInstance from "../../hooks/AxiosInstance";
 import { ErrorResponse, UserCount, UserCountResponse, User, UsersResponse, UserState, UpdateUserStatusResponse, UpdateUserStatusRequest, DeleteUserResponse } from "../../types/UserModel";
 import axiosIstance from "../../hooks/AxiosInstance";
-
-
 export interface InsertUserRequest {
   user_type: number;
   name: string;
@@ -34,12 +32,10 @@ export interface InsertUserRequest {
   ifsc_code: string;
   company_logo?: string;
 }
-
 export interface InsertUserResponse {
   message: string;
   user_id: number;
 }
-
 const initialState: UserState = {
   userCounts: null,
   users: null,
@@ -47,7 +43,13 @@ const initialState: UserState = {
   loading: false,
   error: null,
 };
-
+export interface UpdateEmployeeRequest {
+  user_id: number;
+  [key: string]: any;
+}
+export interface UpdateEmployeeResponse {
+  message: string;
+}
 
 export const insertUser = createAsyncThunk<
   InsertUserResponse,
@@ -57,14 +59,10 @@ export const insertUser = createAsyncThunk<
   "user/insertUser",
   async (formData, { rejectWithValue }) => {
     try {
-
-
       const response = await axiosIstance.post<InsertUserResponse>(
         `/meetCRM/v2/createEmp`,
         formData,
-
       );
-
       toast.success(response.data.message);
       return response.data;
     } catch (error) {
@@ -89,8 +87,6 @@ export const insertUser = createAsyncThunk<
     }
   }
 );
-
-
 export const getTypesCount = createAsyncThunk<
   UserCount[],
   { admin_user_id: number; admin_user_type: number; emp_id?: number; emp_user_type?: number },
@@ -103,14 +99,12 @@ export const getTypesCount = createAsyncThunk<
       if (!token) {
         return rejectWithValue("No authentication token found. Please log in.");
       }
-
       const queryParams = new URLSearchParams({
         admin_user_id: admin_user_id.toString(),
         admin_user_type: admin_user_type.toString(),
         ...(emp_id !== undefined && { emp_id: emp_id.toString() }),
         ...(emp_user_type !== undefined && { emp_user_type: emp_user_type.toString() }),
       });
-
       const response = await ngrokAxiosInstance.get<UserCountResponse>(
         `/api/v1/getTypesCount?${queryParams}`,
         {
@@ -119,7 +113,6 @@ export const getTypesCount = createAsyncThunk<
           },
         }
       );
-
       return response.data.data;
     } catch (error) {
       const axiosError = error as AxiosError<ErrorResponse>;
@@ -141,7 +134,6 @@ export const getTypesCount = createAsyncThunk<
     }
   }
 );
-
 export const getUsersByType = createAsyncThunk<
   User[],
   { created_user_id: number; user_type: number },
@@ -152,7 +144,6 @@ export const getUsersByType = createAsyncThunk<
     try {
       const response = await ngrokAxiosInstance.get<UsersResponse>(
         `/meetCRM/v2/getUsersTypeandCreatedBy?created_user_id=${created_user_id}&user_type=${user_type}`,
-
       );
       return response.data;
     } catch (error) {
@@ -175,7 +166,6 @@ export const getUsersByType = createAsyncThunk<
     }
   }
 );
-
 export const getUserById = createAsyncThunk<
   User,
   { admin_user_id: number; emp_user_type: number; emp_user_id: number },
@@ -184,17 +174,12 @@ export const getUserById = createAsyncThunk<
   "user/getUserById",
   async ({ admin_user_id, emp_user_type, emp_user_id }, { rejectWithValue }) => {
     try {
-    
-
       const response = await ngrokAxiosInstance.get<UsersResponse>(
         `/api/v1/getUsersTypesByBuilder?admin_user_id=${admin_user_id}&emp_user_type=${emp_user_type}&emp_user_id=${emp_user_id}`,
-        
       );
-
       if (!response.data.data || response.data.data.length === 0) {
         return rejectWithValue("User not found");
       }
-
       return response.data.data[0];
     } catch (error) {
       const axiosError = error as AxiosError<ErrorResponse>;
@@ -216,7 +201,6 @@ export const getUserById = createAsyncThunk<
     }
   }
 );
-
 export const updateUserStatus = createAsyncThunk<
   UpdateUserStatusResponse,
   UpdateUserStatusRequest,
@@ -229,12 +213,9 @@ export const updateUserStatus = createAsyncThunk<
       if (!token) {
         return rejectWithValue("No authentication token found. Please log in.");
       }
-
-      // Validate feedback for status: 2
       if (userStatusData.status === 2 && !userStatusData.feedback?.trim()) {
         return rejectWithValue("Feedback is required when rejecting a user (status: 2)");
       }
-
       const response = await ngrokAxiosInstance.post<UpdateUserStatusResponse>(
         `/api/v1/updateuserstatus`,
         userStatusData,
@@ -245,7 +226,6 @@ export const updateUserStatus = createAsyncThunk<
           },
         }
       );
-
       toast.success(response.data.message);
       return response.data;
     } catch (error) {
@@ -270,7 +250,6 @@ export const updateUserStatus = createAsyncThunk<
     }
   }
 );
-
 export const getUserProfile = createAsyncThunk<
   User,
   {user_id: number},
@@ -280,17 +259,10 @@ export const getUserProfile = createAsyncThunk<
   async ({ user_id }, { rejectWithValue }) => {
     try {
    const query = user_id
-
       const response = await ngrokAxiosInstance.get<UsersResponse>(
         `/meetCRM/v2/getEmpProfileData?user_id=${query}`,
-
       );
-
-      // if (!response.data.data || response.data.data.length === 0) {
-      //   return rejectWithValue("User not found");
-      // }
-
-      return response.data; // Return the first user from the data array
+      return response.data;
     } catch (error) {
       const axiosError = error as AxiosError<ErrorResponse>;
       console.error("Get user profile error:", axiosError);
@@ -313,7 +285,6 @@ export const getUserProfile = createAsyncThunk<
     }
   }
 );
-
 export const deleteUser = createAsyncThunk<
   DeleteUserResponse,
   { id: number; created_user_id: number; created_user_type: number },
@@ -323,14 +294,10 @@ export const deleteUser = createAsyncThunk<
   async ({ id }, { rejectWithValue }) => {
     console.log("deleteUser called with id:", id);
     try {
-     
-
       const response = await ngrokAxiosInstance.delete<DeleteUserResponse>(
         `/meetCRM/v2/deleteEmp?user_id=${id}`,
-         
       );
       console.log("deleteUser response:", response);
-
       toast.success(response.data.message);
       return response.data;
     } catch (error) {
@@ -357,7 +324,67 @@ export const deleteUser = createAsyncThunk<
     }
   }
 );
-
+export const updateEmployee = createAsyncThunk<
+  UpdateEmployeeResponse,
+  UpdateEmployeeRequest,
+  { rejectValue: string }
+>(
+  "user/updateEmployee",
+  async (updateData, { rejectWithValue }) => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        return rejectWithValue("No authentication token found. Please log in.");
+      }
+      if (!updateData.user_id) {
+        return rejectWithValue("user_id is required");
+      }
+      const { user_id, ...fieldsToUpdate } = updateData;
+      if (Object.keys(fieldsToUpdate).length === 0) {
+        return rejectWithValue("No fields provided to update");
+      }
+      const response = await ngrokAxiosInstance.post<UpdateEmployeeResponse>(
+        `/meetCRM/v2/updateEmployee`,
+        updateData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      toast.success(response.data.message);
+      return response.data;
+    } catch (error) {
+      const axiosError = error as AxiosError<ErrorResponse>;
+      console.error("Update employee error:", axiosError);
+      if (axiosError.response) {
+        const status = axiosError.response.status;
+        switch (status) {
+          case 400:
+            return rejectWithValue(
+              axiosError.response.data?.error || "Invalid user data provided"
+            );
+          case 401:
+            return rejectWithValue("Unauthorized: Invalid or expired token");
+          case 404:
+            return rejectWithValue(
+              axiosError.response.data?.error || "Employee not found"
+            );
+          case 500:
+            return rejectWithValue("Server error. Please try again later.");
+          default:
+            return rejectWithValue(
+              axiosError.response.data?.error || "Failed to update employee"
+            );
+        }
+      }
+      return rejectWithValue(
+        "Network error. Please check your connection and try again."
+      );
+    }
+  }
+);
 const userSlice = createSlice({
   name: "user",
   initialState,
@@ -369,7 +396,6 @@ const userSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-
       .addCase(insertUser.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -440,8 +466,7 @@ const userSlice = createSlice({
     })
     .addCase(getUserProfile.fulfilled, (state, action) => {
       state.loading = false;
-      console.log("::::::::::::::::::::::::::::::::::::::::::",action.payload);
-      state.selectedUser = action.payload; // ✅ store here
+      state.selectedUser = action.payload;
     })
     .addCase(getUserProfile.rejected, (state, action) => {
       console.log("rejected")
@@ -463,9 +488,31 @@ const userSlice = createSlice({
         state.loading = false;
         state.error = action.payload as string;
         toast.error(action.payload as string);
+      })
+        .addCase(updateEmployee.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(updateEmployee.fulfilled, (state, action) => {
+        state.loading = false;
+        const updatedUser = action.meta.arg;
+        if (state.users) {
+          state.users = state.users.map((user) =>
+            user.id === updatedUser.user_id
+              ? { ...user, ...updatedUser }
+              : user
+          );
+        }
+        if (state.selectedUser && state.selectedUser.id === updatedUser.user_id) {
+          state.selectedUser = { ...state.selectedUser, ...updatedUser };
+        }
+      })
+      .addCase(updateEmployee.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+        toast.error(action.payload as string);
       });
   },
 });
-
 export const { clearUsers } = userSlice.actions;
 export default userSlice.reducer;

@@ -50,7 +50,6 @@ otp,
     otpVerified,
     isWhatsappFlow,
   } = useSelector((state: RootState) => state.auth);
-console.log("df",tempUser)
   const validateMobile = (mobile: string) => {
     const mobileRegex = /^\d{7,15}$/;
     return mobileRegex.test(mobile)

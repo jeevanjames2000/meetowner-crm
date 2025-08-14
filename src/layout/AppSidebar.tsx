@@ -13,7 +13,6 @@ import { useSidebar } from "../context/SidebarContext";
 import { useSelector } from "react-redux";
 import { RootState } from "../store/store";
 import { filterNavItemsByUserType, NavItem } from "../hooks/NavFilter";
-
 const navItems: NavItem[] = [
   {
     icon: <GridIcon />,
@@ -67,7 +66,6 @@ const navItems: NavItem[] = [
       { name: "Add New Lead", path: "/leads/addlead" },
     ],
   },
-
   {
     name: "Employee Management",
     icon: <FaUserTie />,
@@ -79,7 +77,6 @@ const navItems: NavItem[] = [
     ],
   },
 ];
-
 const AppSidebar: React.FC = () => {
   const { isExpanded, isMobileOpen, isHovered, setIsHovered } = useSidebar();
   const location = useLocation();
@@ -87,7 +84,6 @@ const AppSidebar: React.FC = () => {
     (state: RootState) => state.auth.user?.user_type
   );
   const { user } = useSelector((state: RootState) => state.auth);
-
   const [openSubmenu, setOpenSubmenu] = useState<{
     type: "main";
     index: number;
@@ -103,7 +99,6 @@ const AppSidebar: React.FC = () => {
     subIndex: number;
     nestedIndex: number;
   } | null>(null);
-
   const subMenuRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const nestedSubMenuRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const deepNestedSubMenuRefs = useRef<Record<string, HTMLDivElement | null>>(
@@ -115,14 +110,11 @@ const AppSidebar: React.FC = () => {
   const [deepNestedSubMenuHeight, setDeepNestedSubMenuHeight] = useState<
     Record<string, number>
   >({});
-
   const filteredNavItems = filterNavItemsByUserType(navItems, userType);
-
   const isActive = useCallback(
     (path?: string) => !!path && location.pathname === path,
     [location.pathname]
   );
-
   useEffect(() => {
     let submenuMatched = false;
     navItems.forEach((nav, index) => {
@@ -159,14 +151,12 @@ const AppSidebar: React.FC = () => {
         });
       }
     });
-
     if (!submenuMatched) {
       setOpenSubmenu(null);
       setOpenNestedSubmenu(null);
       setOpenDeepNestedSubmenu(null);
     }
   }, [location.pathname, isActive]);
-
   useLayoutEffect(() => {
     if (openSubmenu) {
       const key = `${openSubmenu.type}-${openSubmenu.index}`;
@@ -196,7 +186,6 @@ const AppSidebar: React.FC = () => {
       }
     }
   }, [openSubmenu, openNestedSubmenu, openDeepNestedSubmenu]);
-
   const handleSubmenuToggle = (index: number) => {
     setOpenSubmenu((prev) =>
       prev?.type === "main" && prev.index === index
@@ -204,7 +193,6 @@ const AppSidebar: React.FC = () => {
         : { type: "main", index }
     );
   };
-
   const handleNestedSubmenuToggle = (index: number, subIndex: number) => {
     setOpenNestedSubmenu((prev) =>
       prev?.type === "main" &&
@@ -214,7 +202,6 @@ const AppSidebar: React.FC = () => {
         : { type: "main", index, subIndex }
     );
   };
-
   const handleDeepNestedSubmenuToggle = (
     index: number,
     subIndex: number,
@@ -229,9 +216,7 @@ const AppSidebar: React.FC = () => {
         : { type: "main", index, subIndex, nestedIndex }
     );
   };
-
   const shouldShowText = isExpanded || isHovered || isMobileOpen;
-
   const renderMenuItems = (items: NavItem[]) => (
     <div className="space-y-1">
       {items.map((nav, index) => {
@@ -241,7 +226,6 @@ const AppSidebar: React.FC = () => {
         const hasActiveChild = nav.subItems?.some(
           (subItem) => subItem.path && isActive(subItem.path)
         );
-
         return (
           <div key={nav.name} className="group">
             {nav.subItems ? (
@@ -298,7 +282,6 @@ const AppSidebar: React.FC = () => {
                 </Link>
               )
             )}
-
             {nav.subItems && shouldShowText && (
               <div
                 ref={(el: HTMLDivElement | null) => {
@@ -389,7 +372,6 @@ const AppSidebar: React.FC = () => {
       })}
     </div>
   );
-
   return (
     <aside
       className={`fixed top-0 left-0 h-screen bg-white border-r border-gray-200 transition-all duration-300 ease-in-out z-50 flex flex-col shadow-lg ${
@@ -430,7 +412,7 @@ const AppSidebar: React.FC = () => {
                 <span className="text-xl font-bold text-gray-900">
                   {user?.company_name}{" "}
                 </span>
-                <span className="text-xs text-gray-500">Real Estate CRM</span>
+                <span className="text-xs text-gray-500">Meetowner CRM</span>
               </div>
             </div>
           ) : (
@@ -440,8 +422,7 @@ const AppSidebar: React.FC = () => {
           )}
         </Link>
       </div>
-
-      {/* Navigation */}
+      {}
       <div className="flex-1 overflow-y-auto px-4 py-6">
         <nav>
           {shouldShowText && (
@@ -452,18 +433,7 @@ const AppSidebar: React.FC = () => {
           {renderMenuItems(filteredNavItems)}
         </nav>
       </div>
-
-      {/* Footer */}
-      {shouldShowText && (
-        <div className="px-6 py-4 border-t border-gray-100">
-          <div className="flex items-center text-xs text-gray-500">
-            <div className="w-2 h-2 bg-green-400 rounded-full mr-2"></div>
-            System Online
-          </div>
-        </div>
-      )}
     </aside>
   );
 };
-
 export default AppSidebar;

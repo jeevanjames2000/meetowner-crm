@@ -278,38 +278,29 @@ export const getLeadUpdatesByLeadId = createAsyncThunk<
   LeadUpdate[],
   {
     lead_id: number;
-    lead_added_user_type: number;
-    lead_added_user_id: number;
   },
   { rejectValue: string }
 >(
   "lead/getLeadUpdatesByLeadId",
-  async ({ lead_id, lead_added_user_type, lead_added_user_id }, { rejectWithValue }) => {
+  async ({ lead_id}, { rejectWithValue }) => {
     try {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        return rejectWithValue("No authentication token found. Please log in.");
-      }
+     
       const queryParams = new URLSearchParams({
         lead_id: lead_id.toString(),
-        lead_added_user_type: lead_added_user_type.toString(),
-        lead_added_user_id: lead_added_user_id.toString(),
+      
       });
       const response = await ngrokAxiosInstance.get<LeadUpdatesResponse>(
-        `/api/v1/leads/getLeadUpdatesByLeadId?${queryParams}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
+        `/meetCRM/v2/leads/getLeadUpdatesByLeadId?${queryParams}`,
+        
       );
-      if (!response.data.results || response.data.results.length === 0) {
+      console.log("response.data.: ", response.data);
+      if (!response.data.updates || response.data.updates.length === 0) {
         return rejectWithValue("No lead updates found");
       }
-      return response.data.results;
+      return response.data.updates;
     } catch (error) {
       const axiosError = error as AxiosError<ErrorResponse>;
-      console.error("Get lead updates by lead ID error:", axiosError);
+    
       if (axiosError.response) {
         const status = axiosError.response.status;
         switch (status) {

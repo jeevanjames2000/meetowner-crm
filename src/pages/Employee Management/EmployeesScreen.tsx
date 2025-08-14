@@ -25,30 +25,10 @@ import ConfirmDeleteUserModal from "../../components/common/ConfirmDeleteUserMod
 import { usePropertyQueries } from "../../hooks/PropertyQueries";
 import { setCityDetails } from "../../store/slices/propertyDetails";
 import { Link, useNavigate, useParams } from "react-router";
-const mockUsers = [
-  {
-    id: 4,
-    name: "sdf",
-    mobile: "6302816551",
-    email: "jeevanjames2000@gmail.com",
-    designation: "5",
-    password: "$2b$10$kQQ/NTGMermyCkrRYEPZb.AD8WmOL4l/FIkrnhPbdeGyh04jzC8vO",
-    city: "Visakhapatnam",
-    pincode: "531163",
-    state: "Andhra Pradesh",
-    user_type: 5,
-    created_by: "Builder User",
-    created_userID: 1070,
-    created_at: "2025-08-12T01:28:51.000Z",
-    created_date: "2025-08-11T18:30:00.000Z",
-    created_time: "12:28:51",
-  },
-];
 const userTypeMap: { [key: number]: string } = {
-  4: "Sales Manager",
-  5: "Telecallers",
-  6: "Marketing Executors",
-  7: "Receptionists",
+  2: "Sales Manager",
+  3: "Telecallers",
+  4: "Marketing Executors",
 };
 const formatDate = (dateString: string): string => {
   const date = new Date(dateString);
@@ -56,20 +36,15 @@ const formatDate = (dateString: string): string => {
 };
 export default function EmployeesScreen() {
   const { status } = useParams<{ status: string }>();
-  console.log("status: ", status);
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
   const { user, isAuthenticated } = useSelector(
     (state: RootState) => state.auth
   );
-  console.log("authenticated: ", isAuthenticated);
-  console.log("user:qqq ", user.user_id);
   const { users, loading, error } = useSelector(
     (state: RootState) => state.user
   );
-  console.log("users: ", users);
-
-  const { states } = useSelector((state: RootState) => state.property);
+  const { states } = useSelector((state: RootState) => state.places);
   const { citiesQuery } = usePropertyQueries();
   const [filterValue, setFilterValue] = useState<string>("");
   const [currentPage, setCurrentPage] = useState<number>(1);
@@ -82,14 +57,11 @@ export default function EmployeesScreen() {
   const [selectedCity, setSelectedCity] = useState<string | null>(null);
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
   const createdUserId = status;
-
   const itemsPerPage = 10;
   const empUserType = Number(status);
-
   const categoryLabel = userTypeMap[empUserType] || "Employees";
-  const citiesResult = citiesQuery(
-    selectedState ? parseInt(selectedState) : undefined
-  );
+  const citiesResult = citiesQuery(selectedState ? selectedState : undefined);
+  useEffect(() => {}, [states, citiesResult.data]);
   useEffect(() => {
     if (citiesResult.data) {
       dispatch(setCityDetails(citiesResult.data));
@@ -105,50 +77,52 @@ export default function EmployeesScreen() {
     }
   }, [citiesResult.isError, citiesResult.error]);
   useEffect(() => {
-    if (isAuthenticated && user?.
-      user_id
-      && empUserType) {
-
-      dispatch(getUsersByType({
-        created_user_id: user?.user_id,
-        user_type: createdUserId
-      }));
-
+    if (isAuthenticated && user?.user_id && empUserType) {
+      dispatch(
+        getUsersByType({
+          created_user_id: user?.user_id,
+          user_type: createdUserId,
+        })
+      );
     }
     return () => {
       dispatch(clearUsers());
     };
-  }, [isAuthenticated, user, empUserType, statusUpdated, dispatch]);
-  const filteredUsers = users?.filter((user) => {
-    const matchesTextFilter = [
-      user.name,
-      user.mobile,
-      user.email,
-      user.city,
-      user.state,
-      user.pincode,
-    ]
-      .map((field) => field?.toLowerCase() || "")
-      .some((field) => field.includes(filterValue.toLowerCase()));
-
-    const userCreatedDate = formatDate(user.created_date);
-
-    const matchesCreatedDate =
-      (!createdDate || userCreatedDate >= createdDate) &&
-      (!createdEndDate || userCreatedDate <= createdEndDate);
-
-    // Match state
-    const stateLabel = states.find((s) => s.value.toString() === selectedState)?.label || "";
-    console.log("stateLabel: ", stateLabel);
-    const matchesState = !selectedState || user.state?.toLowerCase() === stateLabel.toLowerCase();
-
-    // Match city
-    const cityLabel = citiesResult.data?.find((c) => c.value.toString() === selectedCity)?.label || "";
-    const matchesCity = !selectedCity || user.city?.toLowerCase() === cityLabel.toLowerCase();
-
-    return matchesTextFilter && matchesCreatedDate && matchesState && matchesCity;
-  }) || [];
-
+  }, [
+    isAuthenticated,
+    user,
+    empUserType,
+    statusUpdated,
+    dispatch,
+    createdUserId,
+  ]);
+  const filteredUsers =
+    users?.filter((user) => {
+      const matchesTextFilter = [
+        user.name,
+        user.mobile,
+        user.email,
+        user.city,
+        user.state,
+        user.pincode,
+      ]
+        .map((field) => field?.toLowerCase() || "")
+        .some((field) => field.includes(filterValue.toLowerCase()));
+      const userCreatedDate = formatDate(user.created_date);
+      const matchesCreatedDate =
+        (!createdDate || userCreatedDate >= createdDate) &&
+        (!createdEndDate || userCreatedDate <= createdEndDate);
+      const matchesState =
+        !selectedState ||
+        user.state?.toLowerCase() === selectedState.toLowerCase();
+      const cityName =
+        citiesResult.data?.find((c) => c.name === selectedCity)?.name || "";
+      const matchesCity =
+        !selectedCity || user.city?.toLowerCase() === cityName.toLowerCase();
+      return (
+        matchesTextFilter && matchesCreatedDate && matchesState && matchesCity
+      );
+    }) || [];
   const totalItems = filteredUsers.length;
   const totalPages = Math.ceil(totalItems / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -158,16 +132,12 @@ export default function EmployeesScreen() {
     if (isAuthenticated && user?.user_id && empUserType) {
       dispatch(getUserProfile({ user_id: Number(id) }));
       navigate(`/employeedetails/${empUserType}/${id}`);
-
     }
   };
   const handleConfirmDelete = async () => {
     if (selectedUser) {
-      console
       try {
-        await dispatch(
-          deleteUser({ id: selectedUser.id }) // pass correct id
-        ).unwrap();
+        await dispatch(deleteUser({ id: selectedUser.id })).unwrap();
         setStatusUpdated(!statusUpdated);
         setIsDeleteModalOpen(false);
         setSelectedUser(null);
@@ -222,21 +192,15 @@ export default function EmployeesScreen() {
     }
     handleViewProfile(selectedUserId);
   };
-
   const handleBulkUpdate = () => {
-   
-  if (selectedUserId === null) {
-    toast.error("Please select an employee.");
-    return;
-  }
-  
- dispatch(getUserProfile({ user_id: selectedUserId}));
-  const userToEdit = paginatedUsers.find((u) => u.id === selectedUserId);
-  if (userToEdit) {
-    navigate(`/edit-employee/${empUserType}/${selectedUserId}`, { state: { employee: userToEdit } });
-  }
-};
-
+    if (selectedUserId === null) {
+      toast.error("Please select an employee.");
+      return;
+    }
+    navigate(`/edit-employee/${empUserType}/${selectedUserId}`, {
+      state: { user_id: selectedUserId },
+    });
+  };
   const handleBulkDelete = () => {
     if (selectedUserId === null) {
       toast.error("Please select an employee.");
@@ -248,6 +212,15 @@ export default function EmployeesScreen() {
       setIsDeleteModalOpen(true);
     }
   };
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-dark-900 py-6 px-4 sm:px-6 lg:px-8">
+        <h2 className="text-2xl font-bold text-gray-800 dark:text-white">
+          Please log in to view employees
+        </h2>
+      </div>
+    );
+  }
   return (
     <div className="relative min-h-screen">
       <FilterBar
@@ -280,7 +253,6 @@ export default function EmployeesScreen() {
         >
           View Profile
         </Button>
-
         <Button
           variant="primary"
           onClick={handleBulkUpdate}
@@ -289,8 +261,6 @@ export default function EmployeesScreen() {
         >
           Update Profile
         </Button>
-
-
         <Button
           variant="primary"
           onClick={handleBulkDelete}
@@ -388,61 +358,57 @@ export default function EmployeesScreen() {
                   </TableRow>
                 </TableHeader>
                 <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
-                  {paginatedUsers.map((user) => {
-                    const { text: statusText, className: statusClass } =
-                      getStatusDisplay(user.status || "active");
-                    return (
-                      <TableRow
-                        key={user.id}
-                        className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                      >
-                        <TableCell className="px-5 py-4 sm:px-6 text-start text-gray-500 text-theme-sm dark:text-gray-400 whitespace-nowrap w-[10%]">
-                          <input
-                            type="checkbox"
-                            checked={selectedUserId === user.id}
-                            onChange={() => handleCheckboxChange(user.id)}
-                            className="h-3 w-3 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                          />
-                        </TableCell>
-                        <TableCell className="px-5 py-4 sm:px-6 text-start text-theme-sm whitespace-nowrap w-[15%]">
-                          <div className="flex items-center gap-3">
-                            <Link
-                              to="/lead/Leads"
-                              state={{
-                                admin_user_id: createdUserId,
-                                admin_user_type: 2,
-                                assigned_user_type: user.user_type,
-                                assigned_id: user.id,
-                                lead_source_user_id: user.id,
-                                name: user.name,
-                              }}
-                              className="block font-medium text-blue-600 underline hover:text-blue-800 transition-colors"
-                            >
-                              {user.name}
-                            </Link>
-                          </div>
-                        </TableCell>
-                        <TableCell className="px-5 py-4 sm:px-6 text-start text-gray-500 text-theme-sm dark:text-gray-400 whitespace-nowrap w-[15%]">
-                          {user.mobile}
-                        </TableCell>
-                        <TableCell className="px-5 py-4 sm:px-6 text-start text-gray-500 text-theme-sm dark:text-gray-400 whitespace-nowrap w-[15%]">
-                          {user.email}
-                        </TableCell>
-                        <TableCell className="px-5 py-4 sm:px-6 text-start text-gray-500 text-theme-sm dark:text-gray-400 whitespace-nowrap w-[15%]">
-                          {userTypeMap[user.user_type] || "Unknown"}
-                        </TableCell>
-                        <TableCell className="px-5 py-4 sm:px-6 text-start text-gray-500 text-theme-sm dark:text-gray-400 whitespace-nowrap w-[15%]">
-                          {user.city}
-                        </TableCell>
-                        <TableCell className="px-5 py-4 sm:px-6 text-start text-gray-500 text-theme-sm dark:text-gray-400 whitespace-nowrap w-[15%]">
-                          {user.state}
-                        </TableCell>
-                        <TableCell className="px-5 py-4 sm:px-6 text-start text-gray-500 text-theme-sm dark:text-gray-400 whitespace-nowrap w-[10%]">
-                          {formatDate(user.created_at)}
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
+                  {paginatedUsers.map((user) => (
+                    <TableRow
+                      key={user.id}
+                      className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                    >
+                      <TableCell className="px-5 py-4 sm:px-6 text-start text-gray-500 text-theme-sm dark:text-gray-400 whitespace-nowrap w-[10%]">
+                        <input
+                          type="checkbox"
+                          checked={selectedUserId === user.id}
+                          onChange={() => handleCheckboxChange(user.id)}
+                          className="h-3 w-3 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                        />
+                      </TableCell>
+                      <TableCell className="px-5 py-4 sm:px-6 text-start text-theme-sm whitespace-nowrap w-[15%]">
+                        <div className="flex items-center gap-3">
+                          <Link
+                            to="/lead/Leads"
+                            state={{
+                              admin_user_id: createdUserId,
+                              admin_user_type: 2,
+                              assigned_user_type: user.user_type,
+                              assigned_id: user.id,
+                              lead_source_user_id: user.id,
+                              name: user.name,
+                            }}
+                            className="block font-medium text-blue-600 underline hover:text-blue-800 transition-colors"
+                          >
+                            {user.name}
+                          </Link>
+                        </div>
+                      </TableCell>
+                      <TableCell className="px-5 py-4 sm:px-6 text-start text-gray-500 text-theme-sm dark:text-gray-400 whitespace-nowrap w-[15%]">
+                        {user.mobile}
+                      </TableCell>
+                      <TableCell className="px-5 py-4 sm:px-6 text-start text-gray-500 text-theme-sm dark:text-gray-400 whitespace-nowrap w-[15%]">
+                        {user.email}
+                      </TableCell>
+                      <TableCell className="px-5 py-4 sm:px-6 text-start text-gray-500 text-theme-sm dark:text-gray-400 whitespace-nowrap w-[15%]">
+                        {userTypeMap[user.user_type] || "Unknown"}
+                      </TableCell>
+                      <TableCell className="px-5 py-4 sm:px-6 text-start text-gray-500 text-theme-sm dark:text-gray-400 whitespace-nowrap w-[15%]">
+                        {user.city}
+                      </TableCell>
+                      <TableCell className="px-5 py-4 sm:px-6 text-start text-gray-500 text-theme-sm dark:text-gray-400 whitespace-nowrap w-[15%]">
+                        {user.state}
+                      </TableCell>
+                      <TableCell className="px-5 py-4 sm:px-6 text-start text-gray-500 text-theme-sm dark:text-gray-400 whitespace-nowrap w-[10%]">
+                        {formatDate(user.created_at)}
+                      </TableCell>
+                    </TableRow>
+                  ))}
                 </TableBody>
               </Table>
             </div>

@@ -301,14 +301,6 @@ const LeadsType: React.FC = () => {
     if (lead) handleViewHistory(lead);
   };
 
-  const handleBulkBookingDone = () => {
-    if (selectedLeadIdSingle === null) {
-      toast.error("Please select a lead.");
-      return;
-    }
-    handleMarkAsBooked(selectedLeadIdSingle);
-  };
-
   return (
     <div className="relative min-h-screen">
       <PageMeta title={`Lead Management - ${getPageTitle()}`} />

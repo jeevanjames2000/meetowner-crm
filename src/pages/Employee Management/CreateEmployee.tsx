@@ -53,12 +53,9 @@ const CreateEmployee = () => {
   const { user, isAuthenticated } = useSelector(
     (state: RootState) => state.auth
   );
-  console.log("user: ", user);
   const { cities, states, localities } = useSelector(
     (state: RootState) => state.places
   );
-  console.log("states: ", states);
-  console.log("cities: ", cities);
   const [isLocalityDropdownOpen, setIsLocalityDropdownOpen] = useState(false);
   const [formData, setFormData] = useState<FormData>({
     name: "",
@@ -301,7 +298,6 @@ const CreateEmployee = () => {
       navigate("/");
     } catch (error) {
       console.error("User Insertion failed:", error);
-      toast.error("Failed to create employee");
     }
   };
   return (
