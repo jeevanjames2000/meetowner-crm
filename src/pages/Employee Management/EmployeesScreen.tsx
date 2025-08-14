@@ -25,6 +25,7 @@ import ConfirmDeleteUserModal from "../../components/common/ConfirmDeleteUserMod
 import { usePropertyQueries } from "../../hooks/PropertyQueries";
 import { setCityDetails } from "../../store/slices/propertyDetails";
 import { Link, useNavigate, useParams } from "react-router";
+
 const mockUsers = [
   {
     id: 4,
@@ -44,33 +45,26 @@ const mockUsers = [
     created_time: "12:28:51",
   },
 ];
+
 const userTypeMap: { [key: number]: string } = {
   4: "Sales Manager",
   5: "Telecallers",
   6: "Marketing Executors",
   7: "Receptionists",
 };
+
 const formatDate = (dateString: string): string => {
   const date = new Date(dateString);
   return date.toISOString().split("T")[0];
 };
+
 export default function EmployeesScreen() {
   const { status } = useParams<{ status: string }>();
-  console.log("status: ", status);
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
-  const { user, isAuthenticated } = useSelector(
-    (state: RootState) => state.auth
-  );
-  console.log("authenticated: ", isAuthenticated);
-  console.log("user:qqq ", user.user_id);
-  const { users, loading, error } = useSelector(
-    (state: RootState) => state.user
-  );
-  console.log("users: ", users);
-
-  const { states } = useSelector((state: RootState) => state.property);
-  const { citiesQuery } = usePropertyQueries();
+  const { user, isAuthenticated } = useSelector((state: RootState) => state.auth);
+  const { users, loading, error } = useSelector((state: RootState) => state.user);
+  // const { citiesQuery } = usePropertyQueries();
   const [filterValue, setFilterValue] = useState<string>("");
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState<boolean>(false);
@@ -82,43 +76,28 @@ export default function EmployeesScreen() {
   const [selectedCity, setSelectedCity] = useState<string | null>(null);
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
   const createdUserId = status;
-
   const itemsPerPage = 10;
   const empUserType = Number(status);
-
   const categoryLabel = userTypeMap[empUserType] || "Employees";
-  const citiesResult = citiesQuery(
-    selectedState ? parseInt(selectedState) : undefined
-  );
+
+  
+
+
+
   useEffect(() => {
-    if (citiesResult.data) {
-      dispatch(setCityDetails(citiesResult.data));
-    }
-  }, [citiesResult.data, dispatch]);
-  useEffect(() => {
-    if (citiesResult.isError) {
-      toast.error(
-        `Failed to fetch cities: ${
-          citiesResult.error?.message || "Unknown error"
-        }`
+    if (isAuthenticated && user?.user_id && empUserType) {
+      dispatch(
+        getUsersByType({
+          created_user_id: user?.user_id,
+          user_type: createdUserId,
+        })
       );
-    }
-  }, [citiesResult.isError, citiesResult.error]);
-  useEffect(() => {
-    if (isAuthenticated && user?.
-      user_id
-      && empUserType) {
-
-      dispatch(getUsersByType({
-        created_user_id: user?.user_id,
-        user_type: createdUserId
-      }));
-
     }
     return () => {
       dispatch(clearUsers());
     };
   }, [isAuthenticated, user, empUserType, statusUpdated, dispatch]);
+
   const filteredUsers = users?.filter((user) => {
     const matchesTextFilter = [
       user.name,
@@ -132,19 +111,15 @@ export default function EmployeesScreen() {
       .some((field) => field.includes(filterValue.toLowerCase()));
 
     const userCreatedDate = formatDate(user.created_date);
-
     const matchesCreatedDate =
       (!createdDate || userCreatedDate >= createdDate) &&
       (!createdEndDate || userCreatedDate <= createdEndDate);
 
-    // Match state
-    const stateLabel = states.find((s) => s.value.toString() === selectedState)?.label || "";
-    console.log("stateLabel: ", stateLabel);
-    const matchesState = !selectedState || user.state?.toLowerCase() === stateLabel.toLowerCase();
+    // Match state (assuming selectedState is a label like "Andhra Pradesh")
+    const matchesState = !selectedState || user.state?.toLowerCase() === selectedState.toLowerCase();
 
-    // Match city
-    const cityLabel = citiesResult.data?.find((c) => c.value.toString() === selectedCity)?.label || "";
-    const matchesCity = !selectedCity || user.city?.toLowerCase() === cityLabel.toLowerCase();
+    // Match city (assuming selectedCity is a label like "Visakhapatnam")
+    const matchesCity = !selectedCity || user.city?.toLowerCase() === selectedCity.toLowerCase();
 
     return matchesTextFilter && matchesCreatedDate && matchesState && matchesCity;
   }) || [];
@@ -154,20 +129,18 @@ export default function EmployeesScreen() {
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
   const paginatedUsers = filteredUsers.slice(startIndex, endIndex);
+
   const handleViewProfile = (id: number) => {
     if (isAuthenticated && user?.user_id && empUserType) {
       dispatch(getUserProfile({ user_id: Number(id) }));
       navigate(`/employeedetails/${empUserType}/${id}`);
-
     }
   };
+
   const handleConfirmDelete = async () => {
     if (selectedUser) {
-      console
       try {
-        await dispatch(
-          deleteUser({ id: selectedUser.id }) // pass correct id
-        ).unwrap();
+        await dispatch(deleteUser({ id: selectedUser.id })).unwrap();
         setStatusUpdated(!statusUpdated);
         setIsDeleteModalOpen(false);
         setSelectedUser(null);
@@ -179,31 +152,38 @@ export default function EmployeesScreen() {
       }
     }
   };
+
   const handleCancelDelete = () => {
     setIsDeleteModalOpen(false);
     setSelectedUser(null);
   };
+
   const handleFilter = (value: string) => {
     setFilterValue(value);
     setCurrentPage(1);
   };
+
   const handleCreatedDateChange = (date: string | null) => {
     setCreatedDate(date);
     setCurrentPage(1);
   };
+
   const handleCreatedEndDateChange = (date: string | null) => {
     setCreatedEndDate(date);
     setCurrentPage(1);
   };
+
   const handleStateChange = (value: string | null) => {
     setSelectedState(value);
-    setSelectedCity(null);
+    setSelectedCity(null); // Reset city when state changes
     setCurrentPage(1);
   };
+
   const handleCityChange = (value: string | null) => {
     setSelectedCity(value);
     setCurrentPage(1);
   };
+
   const handleClearFilters = () => {
     setFilterValue("");
     setCreatedDate(null);
@@ -212,9 +192,11 @@ export default function EmployeesScreen() {
     setSelectedCity(null);
     setCurrentPage(1);
   };
+
   const handleCheckboxChange = (userId: number) => {
     setSelectedUserId((prev) => (prev === userId ? null : userId));
   };
+
   const handleBulkViewProfile = () => {
     if (selectedUserId === null) {
       toast.error("Please select an employee.");
@@ -224,18 +206,18 @@ export default function EmployeesScreen() {
   };
 
   const handleBulkUpdate = () => {
-   
-  if (selectedUserId === null) {
-    toast.error("Please select an employee.");
-    return;
-  }
-  
- dispatch(getUserProfile({ user_id: selectedUserId}));
-  const userToEdit = paginatedUsers.find((u) => u.id === selectedUserId);
-  if (userToEdit) {
-    navigate(`/edit-employee/${empUserType}/${selectedUserId}`, { state: { employee: userToEdit } });
-  }
-};
+    if (selectedUserId === null) {
+      toast.error("Please select an employee.");
+      return;
+    }
+    dispatch(getUserProfile({ user_id: selectedUserId }));
+    const userToEdit = paginatedUsers.find((u) => u.id === selectedUserId);
+    if (userToEdit) {
+      navigate(`/edit-employee/${empUserType}/${selectedUserId}`, {
+        state: { employee: userToEdit },
+      });
+    }
+  };
 
   const handleBulkDelete = () => {
     if (selectedUserId === null) {
@@ -248,6 +230,7 @@ export default function EmployeesScreen() {
       setIsDeleteModalOpen(true);
     }
   };
+
   return (
     <div className="relative min-h-screen">
       <FilterBar
@@ -280,7 +263,6 @@ export default function EmployeesScreen() {
         >
           View Profile
         </Button>
-
         <Button
           variant="primary"
           onClick={handleBulkUpdate}
@@ -289,8 +271,6 @@ export default function EmployeesScreen() {
         >
           Update Profile
         </Button>
-
-
         <Button
           variant="primary"
           onClick={handleBulkDelete}
@@ -315,7 +295,7 @@ export default function EmployeesScreen() {
               onClick={() =>
                 dispatch(
                   getUsersByType({
-                    created_user_id: user!.id,
+                    created_user_id: user!.user_id,
                     user_type: empUserType,
                   })
                 )
@@ -450,7 +430,7 @@ export default function EmployeesScreen() {
         )}
         {totalItems > itemsPerPage && (
           <div className="flex flex-col sm:flex-row justify-between items-center mt-4 px-4 py-2 gap-4">
-            <div className="text-sm text-gray-500 dark:text-gray-400">
+            <div className="text-sm text-gray-600 dark:text-gray-400">
               Showing {startIndex + 1} to {endIndex} of {totalItems} entries
             </div>
             <Pagination

@@ -91,10 +91,10 @@ const FilterBar: React.FC<FilterBarProps> = ({
         const res = await axios.get<{ state: string; state_id: number; status: string }[]>(
           "https://api.meetowner.in/api/v1/getAllStates"
         );
-        console.log("response:", res);
+
         const activeStates = res.data.filter((s) => s.status === "active");
 
-        console.log("activeStates:::::", activeStates);
+        
         setStateOptions(
           activeStates.map((s) => ({
             value: s.state,
@@ -191,7 +191,7 @@ const FilterBar: React.FC<FilterBarProps> = ({
   return (
     <div className={`flex items-center gap-1 py-2 w-full ${className}`}>
       <div className="flex items-center gap-1 w-full flex-wrap">
-        {showUserTypeFilter && userFilterOptions.length > 0 && (
+        {/* {showUserTypeFilter && userFilterOptions.length > 0 && (
           <div className="w-[1/4] flex-shrink-0">
             <Select
               options={userFilterOptions}
@@ -201,7 +201,7 @@ const FilterBar: React.FC<FilterBarProps> = ({
               className="dark:bg-dark-900 text-sm"
             />
           </div>
-        )}
+        )} */}
         {(
             <div className="w-[100px] flex-shrink-0">
           <Dropdown
@@ -238,7 +238,7 @@ const FilterBar: React.FC<FilterBarProps> = ({
                 placeholder="start"
                 onChange={handleCreatedDateChange}
                 defaultDate={createdDate ? new Date(createdDate) : undefined}
-                className="w-full text-sm"
+                className="w-full text-sm "
               />
             </div>
           )}

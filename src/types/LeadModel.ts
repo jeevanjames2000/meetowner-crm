@@ -51,6 +51,10 @@ export interface Lead {
   status_name?: string; 
   state?:string | null;
   city?:string | null;
+  unique_property_id ?:any
+
+created_at ?:any
+updated_at ?:any
 }
 export interface OpenLead{
   id: number;
