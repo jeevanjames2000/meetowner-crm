@@ -12,7 +12,9 @@ interface JwtPayload {
 
 const ProtectedRoute: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
-  const { isAuthenticated, error } = useSelector((state: RootState) => state.auth);
+  const { isAuthenticated, error } = useSelector(
+    (state: RootState) => state.auth
+  );
   const location = useLocation();
   const navigate = useNavigate(); // Added useNavigate
   const searchParams = new URLSearchParams(location.search);
@@ -21,13 +23,11 @@ const ProtectedRoute: React.FC = () => {
   const [isValidUser, setIsValidUser] = useState(false);
   const [hasProcessedToken, setHasProcessedToken] = useState(false);
 
-
   useEffect(() => {
     if (error) {
       toast.error(error);
     }
   }, [error]);
-
 
   useEffect(() => {
     if (!queryToken || hasProcessedToken) return;
@@ -45,7 +45,10 @@ const ProtectedRoute: React.FC = () => {
           throw new Error("Invalid token: No user_id found");
         }
 
-        const res = await dispatch(getUserById({ userId, token: queryToken })).unwrap();
+        const res = await dispatch(
+          getUserById({ userId, token: queryToken })
+        ).unwrap();
+        console.log("res: ", res.user);
 
         if (res?.user?.crm_access === 1) {
           setIsValidUser(true);
@@ -74,11 +77,9 @@ const ProtectedRoute: React.FC = () => {
     return <Navigate to="/signin" replace state={{ from: location }} />;
   }
 
-
   if (isLoading) {
     return <div>Loading...</div>;
   }
-
 
   if (hasProcessedToken && isValidUser) {
     return <Outlet />;
