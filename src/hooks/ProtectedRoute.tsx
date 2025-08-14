@@ -19,9 +19,11 @@ const ProtectedRoute: React.FC = () => {
   const navigate = useNavigate(); // Added useNavigate
   const searchParams = new URLSearchParams(location.search);
   const queryToken = searchParams.get("url");
+  console.log("queryToken: ", queryToken);
   const [isLoading, setIsLoading] = useState(!!queryToken);
   const [isValidUser, setIsValidUser] = useState(false);
   const [hasProcessedToken, setHasProcessedToken] = useState(false);
+  console.log("hasProcessedToken: ", hasProcessedToken);
 
   useEffect(() => {
     if (error) {
