@@ -2,7 +2,11 @@ import { useSelector, useDispatch } from "react-redux";
 import { Navigate, Outlet, useLocation, useNavigate } from "react-router";
 import { useEffect, useState } from "react";
 import { AppDispatch, RootState } from "../store/store";
-import { getUserById, isTokenExpired } from "../store/slices/authSlice";
+import {
+  getUserById,
+  isTokenExpired,
+  setToken,
+} from "../store/slices/authSlice";
 import { jwtDecode } from "jwt-decode";
 import toast from "react-hot-toast";
 interface JwtPayload {
@@ -10,18 +14,14 @@ interface JwtPayload {
 }
 const ProtectedRoute: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
-  const { isAuthenticated, error } = useSelector(
-    (state: RootState) => state.auth
-  );
+  const { error } = useSelector((state: RootState) => state.auth);
   const location = useLocation();
   const navigate = useNavigate();
   const searchParams = new URLSearchParams(location.search);
   const queryToken = searchParams.get("url");
-  console.log("queryToken: ", queryToken);
   const [isLoading, setIsLoading] = useState(!!queryToken);
   const [isValidUser, setIsValidUser] = useState(false);
   const [hasProcessedToken, setHasProcessedToken] = useState(false);
-  console.log("hasProcessedToken: ", hasProcessedToken);
   useEffect(() => {
     if (error) {
       toast.error(error);
@@ -42,20 +42,15 @@ const ProtectedRoute: React.FC = () => {
         const res = await dispatch(
           getUserById({ userId, token: queryToken })
         ).unwrap();
-        console.log("res: ", res.user.crm_access);
         if (res?.user?.crm_access === 1) {
+          await dispatch(setToken(queryToken));
           setIsValidUser(true);
-          console.log("routed");
           navigate("/");
         } else {
-          console.log("sign routed");
-
           navigate("/signin");
         }
       } catch (err) {
         console.error("Token processing error:", err);
-        toast.error(err.message || "Invalid token");
-        navigate("/signin", { replace: true });
       } finally {
         setHasProcessedToken(true);
         setIsLoading(false);
@@ -63,12 +58,7 @@ const ProtectedRoute: React.FC = () => {
     };
     processToken();
   }, [queryToken, dispatch, hasProcessedToken, navigate]);
-  if (!queryToken && isAuthenticated) {
-    return <Outlet />;
-  }
-  if (!queryToken) {
-    return <Navigate to="/signin" replace state={{ from: location }} />;
-  }
+
   if (isLoading) {
     return <div>Loading...</div>;
   }
