@@ -3,13 +3,10 @@ import { EyeCloseIcon, EyeIcon } from "../../icons";
 import { useDispatch, useSelector } from "react-redux";
 import { Navigate, useNavigate } from "react-router";
 import {
-
   verifyOtpAdmin,
   resetOtpState,
   sendUnifiedOtp,
   loginUser,
- 
-  
 } from "../../store/slices/authSlice";
 
 import { toast } from "react-hot-toast";
@@ -18,16 +15,12 @@ import Label from "../form/Label";
 import Input from "../form/input/InputField";
 import Button from "../ui/button/Button";
 
-
-
-
 export default function SignInForm() {
   const dispatch = useDispatch<AppDispatch>();
-  
+
   const navigate = useNavigate();
   const formRef = useRef<HTMLFormElement>(null);
   const submitButtonRef = useRef<HTMLButtonElement>(null);
-  const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     mobile: "",
 
@@ -45,7 +38,7 @@ export default function SignInForm() {
     loading,
     tempUser,
     error,
-otp,
+    otp,
     otpSent,
     otpVerified,
     isWhatsappFlow,
@@ -87,7 +80,7 @@ otp,
       newErrors.mobile = "Mobile number is required";
       hasError = true;
     }
-   
+
     const mobileError = validateMobile(formData.mobile);
     if (mobileError) {
       newErrors.mobile = mobileError;
@@ -105,21 +98,19 @@ otp,
         })
       ).unwrap();
     } catch (err: any) {
-    // If err is coming from rejectWithValue, it will already be backend's message
-    const errorMessage =
-      typeof err === "string"
-        ? err
-        : err?.message || "Access denied!";
+      // If err is coming from rejectWithValue, it will already be backend's message
+      const errorMessage =
+        typeof err === "string" ? err : err?.message || "Access denied!";
 
-    setErrors((prevErrors) => ({
-      ...prevErrors,
-      general: errorMessage,
-    }));
+      setErrors((prevErrors) => ({
+        ...prevErrors,
+        general: errorMessage,
+      }));
 
-    toast.error(errorMessage);
-  }
+      toast.error(errorMessage);
+    }
   };
-  
+
   const handleSubmitOtp = async (e: { preventDefault: () => void }) => {
     e.preventDefault();
     const newErrors = { mobile: "", password: "", otp: "", general: "" };
@@ -134,15 +125,13 @@ otp,
       return;
     }
     try {
-     
-        await dispatch(
-          verifyOtpAdmin({
-            mobile: formData.mobile,
-            otp: formData.otp,
-          })
-        ).unwrap();
-        navigate("/");
-      
+      await dispatch(
+        verifyOtpAdmin({
+          mobile: formData.mobile,
+          otp: formData.otp,
+        })
+      ).unwrap();
+      navigate("/");
     } catch (err: any) {
       setErrors((prevErrors) => ({
         ...prevErrors,
@@ -153,9 +142,7 @@ otp,
   };
   const handleResendOtp = async () => {
     try {
-      
-        await dispatch(sendUnifiedOtp({ mobile: formData.mobile })).unwrap();
-      
+      await dispatch(sendUnifiedOtp({ mobile: formData.mobile })).unwrap();
     } catch (err: any) {
       setErrors((prevErrors) => ({
         ...prevErrors,
@@ -167,9 +154,9 @@ otp,
   const handleBackToLogin = () => {
     dispatch(resetOtpState());
     setFormData((prev) => ({ ...prev, otp: "" }));
-    setErrors({ mobile: "",  otp: "", general: "" });
+    setErrors({ mobile: "", otp: "", general: "" });
   };
-  useEffect(() => { 
+  useEffect(() => {
     if (error) {
       setErrors((prevErrors) => ({
         ...prevErrors,
@@ -227,7 +214,6 @@ otp,
                       </p>
                     )}
                   </div>
-                  
                 </>
               ) : (
                 <>

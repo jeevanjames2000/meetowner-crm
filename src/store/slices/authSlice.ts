@@ -276,34 +276,21 @@ export const getUserById = createAsyncThunk<
 
 export const verifyOtpAdmin = createAsyncThunk(
   "auth/verifyOtpAdmin",
-  async ({ mobile, otp }: VerifyOtpRequest, { rejectWithValue, getState }) => {
-    try {
-      const state = getState() as { auth: AuthState };
-      const storedOtp = state.auth.otp;
-      if (storedOtp && otp === storedOtp) {
-        const userDetails = state.auth.tempUser
-        const userId = state.auth.tempUser?.user_id;
-        if (!userId) {
-          throw new Error("User ID not found in temporary state");
-        }
-        return { status: "success", message: "OTP verified successfully" };
-      }
-    } catch (error) {
-      const axiosError = error as AxiosError<ErrorResponse> | Error;
-      console.error("Verify OTP error:", axiosError);
-      toast.error(
-        axiosError instanceof AxiosError
-          ? axiosError.response?.data?.message || "Failed to verify OTP"
-          : axiosError.message || "Failed to verify OTP"
-      );
-      return rejectWithValue(
-        axiosError instanceof AxiosError
-          ? axiosError.response?.data?.message || "Failed to verify OTP"
-          : axiosError.message || "Failed to verify OTP"
-      );
+  async ({ otp }: { otp: string }, { rejectWithValue, getState }) => {
+    const state = getState() as { auth: AuthState };
+    const storedOtp = state.auth.otp;
+    console.log("storedOtp: ", storedOtp,otp);
+
+    // If OTP doesn't match
+    if (!storedOtp || otp !== storedOtp) {
+      return rejectWithValue("Invalid OTP");
     }
+
+    // Success
+    return { status: "success", message: "OTP verified successfully" };
   }
 );
+
 export const verifyWhatsappOtpLocally = createAction<{ otp: string }>("auth/verifyWhatsappOtpLocally");
 export const getProfile = createAsyncThunk(
   "auth/getProfile",
@@ -458,9 +445,6 @@ const authSlice = createSlice({
       .addCase(verifyOtpAdmin.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
-        state.tempUser = null;
-        state.tempToken = null;
-        state.otp = null;
       })
       .addCase(getProfile.pending, (state) => {
         state.loading = true;
