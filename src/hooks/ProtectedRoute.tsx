@@ -1,8 +1,8 @@
 import { useSelector, useDispatch } from "react-redux";
-import { Navigate, Outlet, useLocation } from "react-router";
+import { Navigate, Outlet, useLocation, useNavigate } from "react-router";
 import { useEffect, useState } from "react";
 import { AppDispatch, RootState } from "../store/store";
-import { getUserById, isTokenExpired, logout } from "../store/slices/authSlice";
+import { getUserById, isTokenExpired } from "../store/slices/authSlice";
 import { jwtDecode } from "jwt-decode";
 import toast from "react-hot-toast";
 
@@ -14,11 +14,13 @@ const ProtectedRoute: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
   const { isAuthenticated, error } = useSelector((state: RootState) => state.auth);
   const location = useLocation();
+  const navigate = useNavigate(); // Added useNavigate
   const searchParams = new URLSearchParams(location.search);
   const queryToken = searchParams.get("url");
-  const [isLoading, setIsLoading] = useState(!!queryToken); 
-  const [isValidUser, setIsValidUser] = useState(false); 
+  const [isLoading, setIsLoading] = useState(!!queryToken);
+  const [isValidUser, setIsValidUser] = useState(false);
   const [hasProcessedToken, setHasProcessedToken] = useState(false);
+
 
   useEffect(() => {
     if (error) {
@@ -26,17 +28,16 @@ const ProtectedRoute: React.FC = () => {
     }
   }, [error]);
 
+
   useEffect(() => {
     if (!queryToken || hasProcessedToken) return;
 
     const processToken = async () => {
       try {
-       
         if (isTokenExpired(queryToken)) {
           throw new Error("Token has expired");
         }
 
-       
         const decoded: JwtPayload = jwtDecode<JwtPayload>(queryToken);
         const userId = decoded.user_id;
 
@@ -44,19 +45,18 @@ const ProtectedRoute: React.FC = () => {
           throw new Error("Invalid token: No user_id found");
         }
 
-        
         const res = await dispatch(getUserById({ userId, token: queryToken })).unwrap();
 
         if (res?.user?.crm_access === 1) {
           setIsValidUser(true);
-          window.history.replaceState({}, "", "/"); 
+          navigate("/", { replace: true });
         } else {
-          window.history.replaceState({}, "", "/signin"); 
+          navigate("/signin", { replace: true });
         }
       } catch (err) {
         console.error("Token processing error:", err);
         toast.error(err.message || "Invalid token");
-        window.history.replaceState({}, "", "/signin"); 
+        navigate("/signin", { replace: true });
       } finally {
         setHasProcessedToken(true);
         setIsLoading(false);
@@ -64,19 +64,22 @@ const ProtectedRoute: React.FC = () => {
     };
 
     processToken();
-  }, [queryToken, dispatch, hasProcessedToken]);
+  }, [queryToken, dispatch, hasProcessedToken, navigate]);
 
-  
+  if (!queryToken && isAuthenticated) {
+    return <Outlet />;
+  }
+
   if (!queryToken) {
     return <Navigate to="/signin" replace state={{ from: location }} />;
   }
 
- 
+
   if (isLoading) {
-    return <div>Loading...</div>; 
+    return <div>Loading...</div>;
   }
 
-  
+
   if (hasProcessedToken && isValidUser) {
     return <Outlet />;
   }
