@@ -6,8 +6,8 @@ import Input from "../../components/form/input/InputField";
 import MultiSelect from "../../components/form/MultiSelect";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "../../store/store";
-import { clearMessages, updateEmployee } from "../../store/slices/employee";
-import { getCities, getStates } from "../../store/slices/propertyDetails";
+// import { clearMessages, updateEmployee } from "../../store/slices/employee";
+// import { getCities, getStates } from "../../store/slices/propertyDetails";
 import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumbList from "../../components/common/PageBreadCrumbLists";
 

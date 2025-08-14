@@ -39,6 +39,7 @@ export default function App() {
           <Route element={<ProtectedRoute />}>
             <Route element={<AppLayout />}>
               <Route index path="/" element={<Home />} />
+              <Route index path="/" element={<Home />} />
 
               <Route path="/leads/:lead_in/:status" element={<LeadsType />} />
               <Route path="/openLeads" element={<OpenLeads />} />
@@ -59,10 +60,12 @@ export default function App() {
 
               <Route path="/employee/:status" element={<EmployeesScreen />} />
               <Route path="/create-employee" element={<CreateEmployee />} />
+              <Route path="/edit-employee/:status/:id" element={<EditEmployee />} />
               <Route
                 path="/employeedetails/:status/:id"
                 element={<EmployeeDetail />}
               />
+              
             </Route>
           </Route>
           <Route

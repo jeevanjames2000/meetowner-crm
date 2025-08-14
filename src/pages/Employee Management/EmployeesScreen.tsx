@@ -18,6 +18,7 @@ import {
   clearUsers,
   getUsersByType,
   deleteUser,
+  getUserProfile,
 } from "../../store/slices/userslice";
 import { getStatusDisplay } from "../../utils/statusdisplay";
 import ConfirmDeleteUserModal from "../../components/common/ConfirmDeleteUserModal";
@@ -104,56 +105,49 @@ export default function EmployeesScreen() {
     }
   }, [citiesResult.isError, citiesResult.error]);
   useEffect(() => {
-    if (isAuthenticated && user?.user_id && empUserType) {
-      dispatch(
-        getUsersByType({
-          created_user_id: user?.user_id,
-          user_type: createdUserId,
-        })
-      );
+    if (isAuthenticated && user?.
+      user_id
+      && empUserType) {
+
+      dispatch(getUsersByType({
+        created_user_id: user?.user_id,
+        user_type: createdUserId
+      }));
+
     }
     return () => {
       dispatch(clearUsers());
     };
   }, [isAuthenticated, user, empUserType, statusUpdated, dispatch]);
-  const filteredUsers =
-    users?.filter((user) => {
-      const matchesTextFilter = [
-        user.name,
-        user.mobile,
-        user.email,
-        user.city,
-        user.state,
-        user.pincode,
-      ]
-        .map((field) => field?.toLowerCase() || "")
-        .some((field) => field.includes(filterValue.toLowerCase()));
+  const filteredUsers = users?.filter((user) => {
+    const matchesTextFilter = [
+      user.name,
+      user.mobile,
+      user.email,
+      user.city,
+      user.state,
+      user.pincode,
+    ]
+      .map((field) => field?.toLowerCase() || "")
+      .some((field) => field.includes(filterValue.toLowerCase()));
 
-      const userCreatedDate = formatDate(user.created_date);
+    const userCreatedDate = formatDate(user.created_date);
 
-      const matchesCreatedDate =
-        (!createdDate || userCreatedDate >= createdDate) &&
-        (!createdEndDate || userCreatedDate <= createdEndDate);
+    const matchesCreatedDate =
+      (!createdDate || userCreatedDate >= createdDate) &&
+      (!createdEndDate || userCreatedDate <= createdEndDate);
 
-      // Match state
-      const stateLabel =
-        states.find((s) => s.value.toString() === selectedState)?.label || "";
-      console.log("stateLabel: ", stateLabel); 
-      const matchesState =
-        !selectedState ||
-        user.state?.toLowerCase() === stateLabel.toLowerCase();
+    // Match state
+    const stateLabel = states.find((s) => s.value.toString() === selectedState)?.label || "";
+    console.log("stateLabel: ", stateLabel);
+    const matchesState = !selectedState || user.state?.toLowerCase() === stateLabel.toLowerCase();
 
-      // Match city
-      const cityLabel =
-        citiesResult.data?.find((c) => c.value.toString() === selectedCity)
-          ?.label || "";
-      const matchesCity =
-        !selectedCity || user.city?.toLowerCase() === cityLabel.toLowerCase();
+    // Match city
+    const cityLabel = citiesResult.data?.find((c) => c.value.toString() === selectedCity)?.label || "";
+    const matchesCity = !selectedCity || user.city?.toLowerCase() === cityLabel.toLowerCase();
 
-      return (
-        matchesTextFilter && matchesCreatedDate && matchesState && matchesCity
-      );
-    }) || [];
+    return matchesTextFilter && matchesCreatedDate && matchesState && matchesCity;
+  }) || [];
 
   const totalItems = filteredUsers.length;
   const totalPages = Math.ceil(totalItems / itemsPerPage);
@@ -162,18 +156,17 @@ export default function EmployeesScreen() {
   const paginatedUsers = filteredUsers.slice(startIndex, endIndex);
   const handleViewProfile = (id: number) => {
     if (isAuthenticated && user?.user_id && empUserType) {
+      dispatch(getUserProfile({ user_id: Number(id) }));
       navigate(`/employeedetails/${empUserType}/${id}`);
+
     }
   };
   const handleConfirmDelete = async () => {
-    if (selectedUser && user?.user_type) {
+    if (selectedUser) {
+      console
       try {
         await dispatch(
-          deleteUser({
-            id: selectedUser.id,
-            created_user_id: createdUserId,
-            created_user_type: user.user_type,
-          })
+          deleteUser({ id: selectedUser.id }) // pass correct id
         ).unwrap();
         setStatusUpdated(!statusUpdated);
         setIsDeleteModalOpen(false);
@@ -229,6 +222,21 @@ export default function EmployeesScreen() {
     }
     handleViewProfile(selectedUserId);
   };
+
+  const handleBulkUpdate = () => {
+   
+  if (selectedUserId === null) {
+    toast.error("Please select an employee.");
+    return;
+  }
+  
+ dispatch(getUserProfile({ user_id: selectedUserId}));
+  const userToEdit = paginatedUsers.find((u) => u.id === selectedUserId);
+  if (userToEdit) {
+    navigate(`/edit-employee/${empUserType}/${selectedUserId}`, { state: { employee: userToEdit } });
+  }
+};
+
   const handleBulkDelete = () => {
     if (selectedUserId === null) {
       toast.error("Please select an employee.");
@@ -272,6 +280,17 @@ export default function EmployeesScreen() {
         >
           View Profile
         </Button>
+
+        <Button
+          variant="primary"
+          onClick={handleBulkUpdate}
+          disabled={selectedUserId === null}
+          className="px-4 py-1 h-10"
+        >
+          Update Profile
+        </Button>
+
+
         <Button
           variant="primary"
           onClick={handleBulkDelete}
