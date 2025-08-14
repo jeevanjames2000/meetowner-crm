@@ -37,7 +37,7 @@ export interface User {
   rera_number: string;
   created_by: string;
   created_user_id: number | null;
-  created_user_type:number | null;
+  created_user_type: number | null;
   company_name: string;
   company_number: string;
   company_address: string;
@@ -45,7 +45,8 @@ export interface User {
   pan_card_number: string;
   aadhar_number: string;
   feedback: string | null;
-  company_logo:string | null;
+  company_logo: string | null;
+  crm_access: number;
 }
 
 export interface LoginResponse {
@@ -81,7 +82,7 @@ export interface UpdateUserStatusRequest {
   user_id: number;
   status: number;
   updated_by_user_id: number;
-  feedback?: string; 
+  feedback?: string;
 }
 
 export interface UpdateUserStatusResponse {
@@ -92,8 +93,8 @@ export interface UpdateUserStatusResponse {
 export interface UserState {
   userCounts: UserCount[] | null;
   users: User[] | null;
-  selectedUser: User | null; 
-  selectedUserEmp:User | null;
+  selectedUser: User | null;
+  selectedUserEmp: User | null;
   loading: boolean;
   error: string | null;
 }

@@ -157,7 +157,7 @@ export const loginUser = createAsyncThunk(
         error: "Login failed",
       });
       const response = await promise;
-    
+
       await dispatch(sendUnifiedOtp({ mobile: credentials.mobile })).unwrap();
       return response.data.user_details
     } catch (error) {
@@ -277,9 +277,13 @@ export const getUserById = createAsyncThunk<
 export const verifyOtpAdmin = createAsyncThunk(
   "auth/verifyOtpAdmin",
   async ({ mobile, otp }: VerifyOtpRequest, { rejectWithValue, getState }) => {
+
+
     try {
       const state = getState() as { auth: AuthState };
       const storedOtp = state.auth.otp;
+
+
       if (storedOtp && otp === storedOtp) {
         const userDetails = state.auth.tempUser
         const userId = state.auth.tempUser?.user_id;
@@ -287,6 +291,10 @@ export const verifyOtpAdmin = createAsyncThunk(
           throw new Error("User ID not found in temporary state");
         }
         return { status: "success", message: "OTP verified successfully" };
+      } else {
+        return rejectWithValue("Invalid OTP");
+
+
       }
     } catch (error) {
       const axiosError = error as AxiosError<ErrorResponse> | Error;
@@ -296,6 +304,7 @@ export const verifyOtpAdmin = createAsyncThunk(
           ? axiosError.response?.data?.message || "Failed to verify OTP"
           : axiosError.message || "Failed to verify OTP"
       );
+      console.error("Verify OTP error:", axiosError?.res);
       return rejectWithValue(
         axiosError instanceof AxiosError
           ? axiosError.response?.data?.message || "Failed to verify OTP"
@@ -516,10 +525,12 @@ const authSlice = createSlice({
         localStorage.clear();
       })
       .addCase(getUserById.pending, (state) => {
+
         state.loading = true;
         state.error = null;
       })
       .addCase(getUserById.fulfilled, (state, action) => {
+
         state.user = {
           id: action.payload.user.user_id,
           name: action.payload.user.name,
@@ -533,6 +544,7 @@ const authSlice = createSlice({
 
       })
       .addCase(getUserById.rejected, (state, action) => {
+
         state.loading = false;
         state.error = action.payload as string;
       })

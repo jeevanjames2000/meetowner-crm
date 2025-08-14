@@ -9,47 +9,16 @@ import toast from "react-hot-toast";
 interface JwtPayload {
   user_id: number;
 }
+
 const ProtectedRoute: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
-  const { isAuthenticated, token, error } = useSelector(
-    (state: RootState) => state.auth
-  );
+  const { isAuthenticated, error } = useSelector((state: RootState) => state.auth);
   const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
   const queryToken = searchParams.get("url");
-
+  const [isLoading, setIsLoading] = useState(!!queryToken); 
+  const [isValidUser, setIsValidUser] = useState(false); 
   const [hasProcessedToken, setHasProcessedToken] = useState(false);
-
-  useEffect(() => {
-    // Handle query token
-    if (queryToken && !hasProcessedToken) {
-      try {
-        const decoded: JwtPayload = jwtDecode<JwtPayload>(queryToken);
-
-        const userId = decoded.user_id;
-
-        if (userId) {
-          dispatch(getUserById({ userId, token: queryToken }))
-            .unwrap()
-            .then((res) => {
-              setHasProcessedToken(true);
-              if (res?.user) {
-                window.history.replaceState({}, "", "/"); // remove query params
-              }
-            })
-            .catch((err) => {
-              toast.error(err || "Failed to authenticate with token");
-            });
-
-        } else {
-          toast.error("Invalid token: No userId found");
-        }
-      } catch (err) {
-        console.error("Token decode error:", err);
-        toast.error("Invalid token format");
-      }
-    }
-  }, [queryToken, dispatch, hasProcessedToken]);
 
   useEffect(() => {
     if (error) {
@@ -57,10 +26,62 @@ const ProtectedRoute: React.FC = () => {
     }
   }, [error]);
 
-  if (!isAuthenticated || (token && isTokenExpired(token))) {
+  useEffect(() => {
+    if (!queryToken || hasProcessedToken) return;
+
+    const processToken = async () => {
+      try {
+       
+        if (isTokenExpired(queryToken)) {
+          throw new Error("Token has expired");
+        }
+
+       
+        const decoded: JwtPayload = jwtDecode<JwtPayload>(queryToken);
+        const userId = decoded.user_id;
+
+        if (!userId) {
+          throw new Error("Invalid token: No user_id found");
+        }
+
+        
+        const res = await dispatch(getUserById({ userId, token: queryToken })).unwrap();
+
+        if (res?.user?.crm_access === 1) {
+          setIsValidUser(true);
+          window.history.replaceState({}, "", "/"); 
+        } else {
+          window.history.replaceState({}, "", "/signin"); 
+        }
+      } catch (err) {
+        console.error("Token processing error:", err);
+        toast.error(err.message || "Invalid token");
+        window.history.replaceState({}, "", "/signin"); 
+      } finally {
+        setHasProcessedToken(true);
+        setIsLoading(false);
+      }
+    };
+
+    processToken();
+  }, [queryToken, dispatch, hasProcessedToken]);
+
+  
+  if (!queryToken) {
     return <Navigate to="/signin" replace state={{ from: location }} />;
   }
 
-  return <Outlet />;
+ 
+  if (isLoading) {
+    return <div>Loading...</div>; 
+  }
+
+  
+  if (hasProcessedToken && isValidUser) {
+    return <Outlet />;
+  }
+
+  return <Navigate to="/signin" replace state={{ from: location }} />;
 };
+
 export default ProtectedRoute;
