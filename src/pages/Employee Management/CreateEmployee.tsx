@@ -264,7 +264,7 @@ const CreateEmployee = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) return;
-    const createdBy = localStorage.getItem("name") || "Admin";
+    const createdBy = user?.name || "Admin";
 
     const payload = {
       name: formData.name,

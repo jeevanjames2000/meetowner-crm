@@ -8,13 +8,12 @@ import Dropdown from "../../components/form/Dropdown";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "../../store/store";
 import {
-  getUserProfile,
+  getEmpProfile,
   updateEmployee,
   UpdateEmployeeRequest,
 } from "../../store/slices/userslice";
 import { fetchAllCities, fetchAllStates } from "../../store/slices/places";
 import PageMeta from "../../components/common/PageMeta";
-import PageBreadcrumbList from "../../components/common/PageBreadCrumbLists";
 import toast from "react-hot-toast";
 interface FormData {
   name: string;
@@ -61,7 +60,7 @@ const EditEmployee: React.FC = () => {
   );
   const { cities, states } = useSelector((state: RootState) => state.places);
   const {
-    selectedUser,
+    selectedUserEmp,
     loading: profileLoading,
     error: profileError,
   } = useSelector((state: RootState) => state.user);
@@ -124,25 +123,25 @@ const EditEmployee: React.FC = () => {
   }, [dispatch, formData.state]);
   useEffect(() => {
     if (user_id) {
-      dispatch(getUserProfile({ user_id: Number(user_id) }));
+      dispatch(getEmpProfile({ user_id: Number(user_id) }));
     }
   }, [dispatch, user_id]);
   useEffect(() => {
-    if (selectedUser) {
+    if (selectedUserEmp) {
       setFormData({
-        id: selectedUser.id || 0,
-        name: selectedUser.name || "",
-        mobile: selectedUser.mobile || "",
-        email: selectedUser.email || "",
-        designation: String(selectedUser.user_type || ""),
-        city: selectedUser.city || "",
-        state: selectedUser.state || "",
-        pincode: selectedUser.pincode || "",
-        locality: selectedUser.location || "",
-        user_type: selectedUser.user_type || 0,
+        id: selectedUserEmp.id || 0,
+        name: selectedUserEmp.name || "",
+        mobile: selectedUserEmp.mobile || "",
+        email: selectedUserEmp.email || "",
+        designation: String(selectedUserEmp.user_type || ""),
+        city: selectedUserEmp.city || "",
+        state: selectedUserEmp.state || "",
+        pincode: selectedUserEmp.pincode || "",
+        locality: selectedUserEmp.location || "",
+        user_type: selectedUserEmp.user_type || 0,
       });
     }
-  }, [selectedUser]);
+  }, [selectedUserEmp]);
   useEffect(() => {
     if (profileError) {
       toast.error(`Failed to fetch employee data: ${profileError}`);
@@ -217,7 +216,6 @@ const EditEmployee: React.FC = () => {
     };
     try {
       const res = await dispatch(updateEmployee(payload)).unwrap();
-      toast.success("Employee updated successfully");
       navigate(`/employee/${res?.designation || 2}`);
     } catch (error) {
       console.error("Employee update failed:", error);
@@ -245,7 +243,7 @@ const EditEmployee: React.FC = () => {
       </div>
     );
   }
-  if (!selectedUser) {
+  if (!selectedUserEmp) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-dark-900 py-6 px-4 sm:px-6 lg:px-8">
         <h2 className="text-2xl font-bold text-gray-800 dark:text-white">

@@ -40,6 +40,7 @@ const initialState: UserState = {
   userCounts: null,
   users: null,
   selectedUser: null,
+  selectedUserEmp:null,
   loading: false,
   error: null,
 };
@@ -254,7 +255,7 @@ export const getEmpProfile = createAsyncThunk<
   {user_id: number},
   { rejectValue: string }
 >(
-  "user/getUserProfile",
+  "user/getEmpProfile",
   async ({ user_id }, { rejectWithValue }) => {
     try {
    const query = user_id
@@ -501,6 +502,18 @@ const userSlice = createSlice({
       state.selectedUser = action.payload;
     })
     .addCase(getUserProfile.rejected, (state, action) => {
+      state.loading = false;
+      state.error = action.payload || "Failed to fetch user profile";
+    })
+     .addCase(getEmpProfile.pending, (state) => {
+      state.loading = true;
+      state.error = null;
+    })
+    .addCase(getEmpProfile.fulfilled, (state, action) => {
+      state.loading = false;
+      state.selectedUserEmp = action.payload;
+    })
+    .addCase(getEmpProfile.rejected, (state, action) => {
       state.loading = false;
       state.error = action.payload || "Failed to fetch user profile";
     })

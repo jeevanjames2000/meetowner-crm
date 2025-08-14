@@ -93,6 +93,7 @@ export interface UserState {
   userCounts: UserCount[] | null;
   users: User[] | null;
   selectedUser: User | null; 
+  selectedUserEmp:User | null;
   loading: boolean;
   error: string | null;
 }

@@ -18,24 +18,20 @@ import {
   clearUsers,
   getUsersByType,
   deleteUser,
-  getUserProfile,
+  getEmpProfile,
 } from "../../store/slices/userslice";
-import { getStatusDisplay } from "../../utils/statusdisplay";
 import ConfirmDeleteUserModal from "../../components/common/ConfirmDeleteUserModal";
 import { usePropertyQueries } from "../../hooks/PropertyQueries";
-import { setCityDetails } from "../../store/slices/propertyDetails";
 import { Link, useNavigate, useParams } from "react-router";
 const userTypeMap: { [key: number]: string } = {
   2: "Sales Manager",
   3: "Telecallers",
   4: "Marketing Executors",
 };
-
 const formatDate = (dateString: string): string => {
   const date = new Date(dateString);
   return date.toISOString().split("T")[0];
 };
-
 export default function EmployeesScreen() {
   const { status } = useParams<{ status: string }>();
   const navigate = useNavigate();
@@ -46,7 +42,6 @@ export default function EmployeesScreen() {
   const { users, loading, error } = useSelector(
     (state: RootState) => state.user
   );
-
   const { citiesQuery } = usePropertyQueries();
   const [filterValue, setFilterValue] = useState<string>("");
   const [currentPage, setCurrentPage] = useState<number>(1);
@@ -62,8 +57,6 @@ export default function EmployeesScreen() {
   const itemsPerPage = 10;
   const empUserType = Number(status);
   const categoryLabel = userTypeMap[empUserType] || "Employees";
-
- 
   useEffect(() => {
     if (isAuthenticated && user?.user_id && empUserType) {
       dispatch(
@@ -98,78 +91,68 @@ export default function EmployeesScreen() {
         .some((field) => field.includes(filterValue.toLowerCase()));
       const userCreatedDate = formatDate(user.created_date);
       const matchesCreatedDate =
-      (!createdDate || userCreatedDate >= createdDate) &&
-      (!createdEndDate || userCreatedDate <= createdEndDate);
-
-    // Match state (assuming selectedState is a label like "Andhra Pradesh")
-    const matchesState = !selectedState || user.state?.toLowerCase() === selectedState.toLowerCase();
-
-    // Match city (assuming selectedCity is a label like "Visakhapatnam")
-    const matchesCity = !selectedCity || user.city?.toLowerCase() === selectedCity.toLowerCase();
-
-    return matchesTextFilter && matchesCreatedDate && matchesState && matchesCity;
-  }) || [];
+        (!createdDate || userCreatedDate >= createdDate) &&
+        (!createdEndDate || userCreatedDate <= createdEndDate);
+      const matchesState =
+        !selectedState ||
+        user.state?.toLowerCase() === selectedState.toLowerCase();
+      const matchesCity =
+        !selectedCity ||
+        user.city?.toLowerCase() === selectedCity.toLowerCase();
+      return (
+        matchesTextFilter && matchesCreatedDate && matchesState && matchesCity
+      );
+    }) || [];
   const totalItems = filteredUsers.length;
   const totalPages = Math.ceil(totalItems / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
   const paginatedUsers = filteredUsers.slice(startIndex, endIndex);
-
   const handleViewProfile = (id: number) => {
     if (isAuthenticated && user?.user_id && empUserType) {
-      dispatch(getUserProfile({ user_id: Number(id) }));
+      dispatch(getEmpProfile({ user_id: Number(id) }));
       navigate(`/employeedetails/${empUserType}/${id}`);
     }
   };
-
   const handleConfirmDelete = async () => {
     if (selectedUser) {
       try {
-        await dispatch(deleteUser({ id: selectedUser.id })).unwrap();
         await dispatch(deleteUser({ id: selectedUser.id })).unwrap();
         setStatusUpdated(!statusUpdated);
         setIsDeleteModalOpen(false);
         setSelectedUser(null);
         setSelectedUserId(null);
-        toast.success("Employee deleted successfully");
       } catch (error) {
         console.error("Failed to delete user:", error);
         toast.error(error as string);
       }
     }
   };
-
   const handleCancelDelete = () => {
     setIsDeleteModalOpen(false);
     setSelectedUser(null);
   };
-
   const handleFilter = (value: string) => {
     setFilterValue(value);
     setCurrentPage(1);
   };
-
   const handleCreatedDateChange = (date: string | null) => {
     setCreatedDate(date);
     setCurrentPage(1);
   };
-
   const handleCreatedEndDateChange = (date: string | null) => {
     setCreatedEndDate(date);
     setCurrentPage(1);
   };
-
   const handleStateChange = (value: string | null) => {
     setSelectedState(value);
-    setSelectedCity(null); // Reset city when state changes
+    setSelectedCity(null);
     setCurrentPage(1);
   };
-
   const handleCityChange = (value: string | null) => {
     setSelectedCity(value);
     setCurrentPage(1);
   };
-
   const handleClearFilters = () => {
     setFilterValue("");
     setCreatedDate(null);
@@ -178,11 +161,9 @@ export default function EmployeesScreen() {
     setSelectedCity(null);
     setCurrentPage(1);
   };
-
   const handleCheckboxChange = (userId: number) => {
     setSelectedUserId((prev) => (prev === userId ? null : userId));
   };
-
   const handleBulkViewProfile = () => {
     if (selectedUserId === null) {
       toast.error("Please select an employee.");
