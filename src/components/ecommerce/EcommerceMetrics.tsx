@@ -22,7 +22,7 @@ const userTypeMap = {
 };
 const userTypeRoutes = {
   total_leads: "/leads/new/0",
-  today_leads: "/leads/today/2",
+  today_leads: "/todayLeads",
   today_follow_ups: "/leads/today/2",
   site_visit_done: "/leads/SiteVisitDone/5",
   sales_manager: "/employee/2",
