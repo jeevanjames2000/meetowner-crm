@@ -62,7 +62,7 @@ export default function EmployeesScreen() {
     (state: RootState) => state.auth
   );
   console.log("authenticated: ", isAuthenticated);
-console.log("user:qqq ", user.user_id);
+  console.log("user:qqq ", user.user_id);
   const { users, loading, error } = useSelector(
     (state: RootState) => state.user
   );
@@ -80,11 +80,11 @@ console.log("user:qqq ", user.user_id);
   const [selectedState, setSelectedState] = useState<string | null>(null);
   const [selectedCity, setSelectedCity] = useState<string | null>(null);
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
-  const createdUserId =status ;
-  
+  const createdUserId = status;
+
   const itemsPerPage = 10;
   const empUserType = Number(status);
-  console.log("empUserType: ", empUserType);
+
   const categoryLabel = userTypeMap[empUserType] || "Employees";
   const citiesResult = citiesQuery(
     selectedState ? parseInt(selectedState) : undefined
@@ -97,55 +97,63 @@ console.log("user:qqq ", user.user_id);
   useEffect(() => {
     if (citiesResult.isError) {
       toast.error(
-        `Failed to fetch cities: ${citiesResult.error?.message || "Unknown error"
+        `Failed to fetch cities: ${
+          citiesResult.error?.message || "Unknown error"
         }`
       );
     }
   }, [citiesResult.isError, citiesResult.error]);
   useEffect(() => {
-    if (isAuthenticated && user?.
-      user_id
-      && empUserType) {
-   
-   dispatch(getUsersByType({
-  created_user_id:user?.user_id  ,
-  user_type: createdUserId
-}));
-
+    if (isAuthenticated && user?.user_id && empUserType) {
+      dispatch(
+        getUsersByType({
+          created_user_id: user?.user_id,
+          user_type: createdUserId,
+        })
+      );
     }
     return () => {
       dispatch(clearUsers());
     };
   }, [isAuthenticated, user, empUserType, statusUpdated, dispatch]);
-  const filteredUsers = users?.filter((user) => {
-  const matchesTextFilter = [
-    user.name,
-    user.mobile,
-    user.email,
-    user.city,
-    user.state,
-    user.pincode,
-  ]
-    .map((field) => field?.toLowerCase() || "")
-    .some((field) => field.includes(filterValue.toLowerCase()));
+  const filteredUsers =
+    users?.filter((user) => {
+      const matchesTextFilter = [
+        user.name,
+        user.mobile,
+        user.email,
+        user.city,
+        user.state,
+        user.pincode,
+      ]
+        .map((field) => field?.toLowerCase() || "")
+        .some((field) => field.includes(filterValue.toLowerCase()));
 
-  const userCreatedDate = formatDate(user.created_date);
+      const userCreatedDate = formatDate(user.created_date);
 
-  const matchesCreatedDate =
-    (!createdDate || userCreatedDate >= createdDate) &&
-    (!createdEndDate || userCreatedDate <= createdEndDate);
+      const matchesCreatedDate =
+        (!createdDate || userCreatedDate >= createdDate) &&
+        (!createdEndDate || userCreatedDate <= createdEndDate);
 
-  // Match state
-  const stateLabel = states.find((s) => s.value.toString() === selectedState)?.label || "";
-  console.log("stateLabel: ", stateLabel);
-  const matchesState = !selectedState || user.state?.toLowerCase() === stateLabel.toLowerCase();
+      // Match state
+      const stateLabel =
+        states.find((s) => s.value.toString() === selectedState)?.label || "";
+      console.log("stateLabel: ", stateLabel); 
+      const matchesState =
+        !selectedState ||
+        user.state?.toLowerCase() === stateLabel.toLowerCase();
 
-  // Match city
-  const cityLabel = citiesResult.data?.find((c) => c.value.toString() === selectedCity)?.label || "";
-  const matchesCity = !selectedCity || user.city?.toLowerCase() === cityLabel.toLowerCase();
+      // Match city
+      const cityLabel =
+        citiesResult.data?.find((c) => c.value.toString() === selectedCity)
+          ?.label || "";
+      const matchesCity =
+        !selectedCity || user.city?.toLowerCase() === cityLabel.toLowerCase();
 
-  return matchesTextFilter && matchesCreatedDate && matchesState && matchesCity;
-}) || [];
+      return (
+        matchesTextFilter && matchesCreatedDate && matchesState && matchesCity
+      );
+    }) || [];
 
   const totalItems = filteredUsers.length;
   const totalPages = Math.ceil(totalItems / itemsPerPage);

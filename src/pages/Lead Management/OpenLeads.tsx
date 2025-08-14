@@ -64,6 +64,16 @@ const userTypeMap: { [key: number]: string } = {
   6: "Marketing Executors",
   7: "Receptionists",
 };
+const statusMap: Record<number, string> = {
+  1: "Open",
+  2: "Follow Up",
+  3: "In Progress",
+  4: "Site Visit Scheduled",
+  5: "Site Visit Done",
+  6: "Won",
+  7: "Lost",
+  8: "Revoked",
+};
 const formatToIndianCurrency = (value) => {
   if (!value || isNaN(value)) return "N/A";
   const numValue = parseFloat(value);
@@ -100,8 +110,7 @@ const OpenLeads: React.FC = () => {
     (state: RootState) => state.lead
   );
   const userId =
-    user?.user_id
-    || parseInt(localStorage.getItem("userId") || "96", 10);
+    user?.user_id || parseInt(localStorage.getItem("userId") || "96", 10);
   const itemsPerPage = 10;
   const statusId = parseInt(status || "0", 10);
   const sidebarItem = sidebarSubItems.find(
@@ -426,6 +435,12 @@ const OpenLeads: React.FC = () => {
                     >
                       Property Cost
                     </TableCell>
+                    <TableCell
+                      isHeader
+                      className="text-left font-medium text-xs whitespace-nowrap w-[10%]"
+                    >
+                      Budget
+                    </TableCell>
                   </TableRow>
                 </TableHeader>
                 <TableBody className="divide-y divide-gray-100 dark:divide-white/[0.05]">
@@ -484,6 +499,9 @@ const OpenLeads: React.FC = () => {
                       </TableCell>
                       <TableCell className="text-center">
                         {formatToIndianCurrency(item.property_cost) || "N/A"}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {formatToIndianCurrency(item.budget) || "N/A"}
                       </TableCell>
                     </TableRow>
                   ))}

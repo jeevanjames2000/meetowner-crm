@@ -26,12 +26,12 @@ const navItems: NavItem[] = [
     subItems: [
       {
         name: "Today Leads",
-        path: "/leads/new/0",
+        path: "/todayLeads",
         data: { lead_in: "Today", status: 0 },
       },
       {
         name: "Open Leads",
-        path: "openLeads",
+        path: "/openLeads",
         data: { lead_in: "Open", status: 1 },
       },
       {

@@ -1,6 +1,5 @@
-import { useMemo } from "react";
-import { useSelector } from "react-redux";
-import { Link } from "react-router";
+import { useEffect, useMemo } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import {
   UserPlus,
   Clock,
@@ -10,35 +9,34 @@ import {
   UserRound,
 } from "lucide-react";
 import { RootState } from "../../store/store";
+import { getAllMetrics } from "../../store/slices/leadslice";
+import { Link } from "react-router";
 const userTypeMap = {
-  new_leads: "Total Leads",
+  total_leads: "Total Leads",
   today_leads: "Today Leads",
   today_follow_ups: "Today Follow-Ups",
   site_visit_done: "Site Visits Done",
-  "4": "Sales Manager",
-  "5": "Telecallers",
-  "6": "Marketing Agent",
-  "7": "Receptionists",
+  sales_manager: "Sales Manager",
+  tele_callers: "Telecallers",
+  marketing_executives: "Marketing Agent",
 };
 const userTypeRoutes = {
-  new_leads: "/leads/new/0",
+  total_leads: "/leads/new/0",
   today_leads: "/leads/today/2",
   today_follow_ups: "/leads/today/2",
   site_visit_done: "/leads/SiteVisitDone/5",
-  "4": "/employee/4",
-  "5": "/employee/5",
-  "6": "/employee/6",
-  "7": "/employee/7",
+  sales_manager: "/employee/2",
+  tele_callers: "/employee/3",
+  marketing_executives: "/employee/4",
 };
 const iconMap = {
-  new_leads: UserPlus,
+  total_leads: UserPlus,
   today_leads: Clock,
   today_follow_ups: Clock,
   site_visit_done: MapPin,
-  "4": UserRound,
-  "5": Headset,
-  "6": CircleUser,
-  "7": UserRound,
+  sales_manager: UserRound,
+  tele_callers: Headset,
+  marketing_executives: CircleUser,
 };
 const cardColors = [
   "from-blue-500/10 to-cyan-500/10 border-blue-200/50",
@@ -54,33 +52,40 @@ const iconBgColors = [
   "bg-gradient-to-br from-orange-500 to-red-600",
   "bg-gradient-to-br from-indigo-500 to-blue-600",
 ];
-const BUILDER_USER_TYPE = 2;
 export default function Home() {
   const { user, isAuthenticated } = useSelector(
     (state: RootState) => state.auth
   );
-  const { userCounts, loading, error } = useSelector(
-    (state: RootState) => state.user
+  const { leadMetrics, loading } = useSelector(
+    (state: RootState) => state.lead
   );
   const allowedUserTypes = [
-    "new_leads",
+    "total_leads",
     "today_leads",
     "today_follow_ups",
     "site_visit_done",
-    "4",
-    "5",
-    "6",
-    "7",
+    "sales_manager",
+    "tele_callers",
+    "marketing_executives",
   ];
   const filteredCounts = useMemo(() => {
-   
-    const counts = allowedUserTypes.map((userType) => {
-      const found = userCounts?.find((item) => item.user_type === userType);
-      return found || { user_type: userType, count: 0 };
-    });
-    
-    return counts;
-  }, [userCounts]);
+    if (!leadMetrics) {
+      return allowedUserTypes.map((userType) => ({
+        user_type: userType,
+        count: 0,
+      }));
+    }
+    return allowedUserTypes.map((userType) => ({
+      user_type: userType,
+      count: leadMetrics[userType as keyof LeadMetrics] || 0,
+    }));
+  }, [leadMetrics]);
+  const dispatch = useDispatch();
+  useEffect(() => {
+    if (user?.user_id) {
+      dispatch(getAllMetrics({ user_id: user.user_id }));
+    }
+  }, [dispatch, user?.user_id]);
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50 p-6">
       <div className="mb-8">

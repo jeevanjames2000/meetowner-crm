@@ -22,6 +22,7 @@ import MarkBookingPage from "./pages/Lead Management/MarkBookingDone";
 import AllCpLeadDetails from "./pages/Lead Management/CpLeads";
 import EmpLeads from "./pages/Lead Management/EmpLeads";
 import OpenLeads from "./pages/Lead Management/OpenLeads";
+import TodayLeads from "./pages/Lead Management/TodayLeads";
 const LeadsType = lazy(() => import("./pages/Lead Management/LeadsType"));
 
 export default function App() {
@@ -35,12 +36,13 @@ export default function App() {
         <ScrollToTop />
 
         <Routes>
-          <Route  element={<ProtectedRoute />}>
+          <Route element={<ProtectedRoute />}>
             <Route element={<AppLayout />}>
-              <Route index path="/"  element={<Home />} />
+              <Route index path="/" element={<Home />} />
 
               <Route path="/leads/:lead_in/:status" element={<LeadsType />} />
               <Route path="/openLeads" element={<OpenLeads />} />
+              <Route path="/todayLeads" element={<TodayLeads />} />
 
               <Route path="/leads/addlead" element={<AddNewLead />} />
               <Route path="/leads/view" element={<ViewLeadDetails />} />

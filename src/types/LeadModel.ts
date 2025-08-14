@@ -104,7 +104,6 @@ export interface LeadUpdate {
 }
 export interface LeadsResponse {
   status: string;
-  results: Lead[];
 }
 export interface LeadUpdatesResponse {
   results: LeadUpdate[];
@@ -123,6 +122,14 @@ export interface LeadSource {
   lead_source_name: string;
   created_date: string;
   updated_date: string;
+}
+export interface LeadMetrics {
+  status: string;
+  data: [];
+}
+export interface LeadMetricsResponse {
+  status: string;
+  data: LeadMetrics[];
 }
 export interface LeadSourceResponse {
   status: string;

@@ -1,17 +1,17 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import { AxiosError } from "axios";
-
 import ngrokAxiosInstance from "../../hooks/AxiosInstance";
-import { ErrorResponse, Lead, LeadsResponse, LeadUpdate, LeadUpdatesResponse, LeadState, LeadStatusResponse, LeadStatus, LeadSourceResponse, LeadSource, InsertLeadResponse, AssignLeadResponse, BookingDoneResponse, UpdateLeadByEmployeeResponse } from "../../types/LeadModel";
-
+import { ErrorResponse, Lead, LeadsResponse, LeadUpdate, LeadUpdatesResponse, LeadState, LeadStatusResponse, LeadStatus, LeadSourceResponse, LeadSource, InsertLeadResponse, AssignLeadResponse, BookingDoneResponse, UpdateLeadByEmployeeResponse, LeadMetrics, LeadMetricsResponse } from "../../types/LeadModel";
 const initialState: LeadState = {
   leads: null,
   openLeads:null,
+  todayLeads:null,
   cpLeads: null,
   leadUpdates: null,
   bookedLeads: null,
   leadStatuses: null, 
   leadSources: null, 
+  leadMetrics:null,
   loading: false,
   error: null,
 };
@@ -49,7 +49,41 @@ interface PropertyEnquiry {
     mobile: string;
   };
 }
-
+ interface Lead {
+  lead_id: number;
+  unique_property_id: string;
+  fullname: string;
+  email: string;
+  mobile: string;
+  sub_type: string;
+  property_for: string;
+  property_in: string;
+  state_id: string;
+  city_id: string;
+  budget: string;
+  google_address: string;
+  assigned_user_type: number;
+  assigned_id: number;
+  assigned_name: string;
+  assigned_emp_number: string;
+  assigned_priority: string;
+  status_id: number;
+  followup_feedback: string;
+  next_action: string;
+  lead_added_user_type: number;
+  lead_added_user_id: number;
+  created_at: string;
+  updated_at: string;
+  lead_source_id: number;
+  lead_from: string;
+  property_name: string;
+  userDetails: {
+    id?: number;
+    name?: string;
+    email?: string;
+    mobile?: string;
+  };
+}
 export const getPropertyEnquiries = createAsyncThunk<
   PropertyEnquiry[],
   { user_id: number },
@@ -58,17 +92,12 @@ export const getPropertyEnquiries = createAsyncThunk<
   "lead/getPropertyEnquiries",
   async ({ user_id }, { rejectWithValue }) => {
     try {
-    
-
       const response = await ngrokAxiosInstance.get<{
         count: number;
-       
       }>(`/meetCRM/v2/leads/getPropertyEnquiries?user_id=${user_id}`);
-
       if (!response.data || response.data.length === 0) {
         return rejectWithValue("No property enquiries found");
       }
-
       return response.data;
     } catch (error) {
       const axiosError = error as AxiosError<ErrorResponse>;
@@ -96,8 +125,47 @@ export const getPropertyEnquiries = createAsyncThunk<
     }
   }
 );
-
-
+export const getTodayLeads = createAsyncThunk<
+  Lead[],
+  { user_id: number },
+  { rejectValue: string }
+>(
+  "lead/getTodayLeads",
+  async ({ user_id }, { rejectWithValue }) => {
+    try {
+      const response = await ngrokAxiosInstance.get<Lead[]>(
+        `/meetCRM/v2/leads/getTodayLeads?user_id=${user_id}`
+      );
+      if (!response.data || response.data.length === 0) {
+        return rejectWithValue("No leads found for today");
+      }
+      return response.data;
+    } catch (error) {
+      const axiosError = error as AxiosError<ErrorResponse>;
+      console.error("Get today leads error:", {
+        message: axiosError.message,
+        response: axiosError.response?.data,
+        status: axiosError.response?.status,
+      });
+      if (axiosError.response) {
+        const status = axiosError.response.status;
+        switch (status) {
+          case 401:
+            return rejectWithValue("Unauthorized: Invalid or expired token");
+          case 404:
+            return rejectWithValue("No leads found for today");
+          case 500:
+            return rejectWithValue("Server error. Please try again later.");
+          default:
+            return rejectWithValue(
+              axiosError.response.data?.message || "Failed to fetch leads"
+            );
+        }
+      }
+      return rejectWithValue("Network error. Please check your connection.");
+    }
+  }
+);
 export const getLeadsByUser = createAsyncThunk<
   Lead[],
   {
@@ -111,47 +179,29 @@ export const getLeadsByUser = createAsyncThunk<
 >(
   "lead/getLeadsByUser",
   async (
-    { lead_added_user_type, lead_added_user_id, assigned_user_type, assigned_id, status_id },
+    {  status_id },
     { rejectWithValue }
   ) => {
     try {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        return rejectWithValue("No authentication token found. Please log in.");
-      }
-
       const queryParams = new URLSearchParams({
-        lead_added_user_type: lead_added_user_type.toString(),
-        lead_added_user_id: lead_added_user_id.toString(),
-        ...(assigned_user_type && { assigned_user_type: assigned_user_type.toString() }),
-        ...(assigned_id && { assigned_id: assigned_id.toString() }),
-        ...(status_id !== undefined && { status_id: status_id.toString() }), 
+        status: status_id.toString() 
       });
-
       const response = await ngrokAxiosInstance.get<LeadsResponse>(
-        `/api/v1/getLeadsByUser?${queryParams}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
+        `/meetCRM/v2/leads/getLeadsByStatus?${queryParams}`,
       );
-
-      if (!response.data.results || response.data.results.length === 0) {
+      if (!response.data || response.data.length === 0) {
         return rejectWithValue("No leads found");
       }
-
-      return response.data.results;
+      return response.data;
     } catch (error) {
       const axiosError = error as AxiosError<ErrorResponse>;
-      console.error("Get leads by user error:", axiosError);
       if (axiosError.response) {
         const status = axiosError.response.status;
         switch (status) {
           case 401:
             return rejectWithValue("Unauthorized: Invalid or expired token");
           case 404:
-            return rejectWithValue("No leads found for this user");
+            return rejectWithValue("No leads found");
           case 500:
             return rejectWithValue("Server error. Please try again later.");
           default:
@@ -184,7 +234,6 @@ export const getLeadsByID = createAsyncThunk<
       if (!token) {
         return rejectWithValue("No authentication token found. Please log in.");
       }
-
       const queryParams = new URLSearchParams({
         lead_added_user_type: lead_added_user_type.toString(),
         lead_added_user_id: lead_added_user_id.toString(),
@@ -193,7 +242,6 @@ export const getLeadsByID = createAsyncThunk<
         ...(assigned_user_type && { assigned_user_type: assigned_user_type.toString() }),
         ...(status_id !== undefined && { status_id: status_id.toString() }), 
       });
-
       const response = await ngrokAxiosInstance.get<LeadsResponse>(
         `/api/v1/leads/getLeadsChannelPartner?${queryParams}`,
         {
@@ -202,11 +250,9 @@ export const getLeadsByID = createAsyncThunk<
           },
         }
       );
-
       if (!response.data.results || response.data.results.length === 0) {
         return rejectWithValue("No leads found");
       }
-
       return response.data.results;
     } catch (error) {
       const axiosError = error as AxiosError<ErrorResponse>;
@@ -228,7 +274,6 @@ export const getLeadsByID = createAsyncThunk<
     }
   }
 );
-
 export const getLeadUpdatesByLeadId = createAsyncThunk<
   LeadUpdate[],
   {
@@ -245,13 +290,11 @@ export const getLeadUpdatesByLeadId = createAsyncThunk<
       if (!token) {
         return rejectWithValue("No authentication token found. Please log in.");
       }
-
       const queryParams = new URLSearchParams({
         lead_id: lead_id.toString(),
         lead_added_user_type: lead_added_user_type.toString(),
         lead_added_user_id: lead_added_user_id.toString(),
       });
-
       const response = await ngrokAxiosInstance.get<LeadUpdatesResponse>(
         `/api/v1/leads/getLeadUpdatesByLeadId?${queryParams}`,
         {
@@ -260,11 +303,9 @@ export const getLeadUpdatesByLeadId = createAsyncThunk<
           },
         }
       );
-
       if (!response.data.results || response.data.results.length === 0) {
         return rejectWithValue("No lead updates found");
       }
-
       return response.data.results;
     } catch (error) {
       const axiosError = error as AxiosError<ErrorResponse>;
@@ -286,15 +327,13 @@ export const getLeadUpdatesByLeadId = createAsyncThunk<
     }
   }
 );
-
-
 export const getBookedLeads = createAsyncThunk<
   Lead[],
   {
     lead_added_user_id: number;
     lead_added_user_type: number;
-    assigned_user_type?: number; // Made optional
-    assigned_id?: number; // Made optional
+    assigned_user_type?: number;
+    assigned_id?: number;
   },
   { rejectValue: string }
 >(
@@ -308,15 +347,12 @@ export const getBookedLeads = createAsyncThunk<
       if (!token) {
         return rejectWithValue("No authentication token found. Please log in.");
       }
-
       const queryParams = new URLSearchParams({
         lead_added_user_id: lead_added_user_id.toString(),
         lead_added_user_type: lead_added_user_type.toString(),
         ...(assigned_user_type !== undefined && { assigned_user_type: assigned_user_type.toString() }),
         ...(assigned_id !== undefined && { assigned_id: assigned_id.toString() }),
       });
-
-
       const response = await ngrokAxiosInstance.get<LeadsResponse>(
         `/api/v1/leads/bookedleads?${queryParams}`,
         {
@@ -325,11 +361,9 @@ export const getBookedLeads = createAsyncThunk<
           },
         }
       );
-
       if (!response.data.results || response.data.results.length === 0) {
         return rejectWithValue("No booked leads found");
       }
-
       return response.data.results;
     } catch (error) {
       const axiosError = error as AxiosError<ErrorResponse>;
@@ -351,7 +385,6 @@ export const getBookedLeads = createAsyncThunk<
     }
   }
 );
-
 export const getLeadStatuses = createAsyncThunk<
   LeadStatus[],
   void,
@@ -364,7 +397,6 @@ export const getLeadStatuses = createAsyncThunk<
       if (!token) {
         return rejectWithValue("No authentication token found. Please log in.");
       }
-
       const response = await ngrokAxiosInstance.get<LeadStatusResponse>(
         `/meetCRM/v2/leads/getAllLeadStatuses`,
         {
@@ -373,11 +405,9 @@ export const getLeadStatuses = createAsyncThunk<
           },
         }
       );
-
       if (!response.data || response.data.length === 0) {
         return rejectWithValue("No lead statuses found");
       }
-
       return response.data;
     } catch (error) {
       const axiosError = error as AxiosError<ErrorResponse>;
@@ -399,7 +429,6 @@ export const getLeadStatuses = createAsyncThunk<
     }
   }
 );
-
 export const getLeadSources = createAsyncThunk<
   LeadSource[],
   void,
@@ -412,7 +441,6 @@ export const getLeadSources = createAsyncThunk<
       if (!token) {
         return rejectWithValue("No authentication token found. Please log in.");
       }
-
       const response = await ngrokAxiosInstance.get<LeadSourceResponse>(
         `/meetCRM/v2/leads/getAllLeadSources`,
         {
@@ -421,11 +449,9 @@ export const getLeadSources = createAsyncThunk<
           },
         }
       );
-
       if (!response.data || response.data.length === 0) {
         return rejectWithValue("No lead sources found");
       }
-
       return response.data;
     } catch (error) {
       const axiosError = error as AxiosError<ErrorResponse>;
@@ -447,7 +473,50 @@ export const getLeadSources = createAsyncThunk<
     }
   }
 );
-
+export const getAllMetrics = createAsyncThunk<
+  LeadMetrics[],
+  { user_id: string },
+  { rejectValue: string }
+>(
+  "lead/getAllMetrics",
+  async ({ user_id }, { rejectWithValue }) => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        return rejectWithValue("No authentication token found. Please log in.");
+      }
+      const queryParams = new URLSearchParams({ user_id });
+      const response = await ngrokAxiosInstance.get<LeadMetricsResponse>(
+        `/meetCRM/v2/leads/getAllEmpandLeadsCounts?${queryParams}`
+      );
+      if (!response.data.data || Object.keys(response.data.data).length === 0) {
+        return rejectWithValue("No lead sources found");
+      }
+      return response.data.data;
+    } catch (error) {
+      const axiosError = error as AxiosError<ErrorResponse>;
+      console.error("Get lead sources error:", axiosError);
+      if (axiosError.response) {
+        const status = axiosError.response.status;
+        switch (status) {
+          case 401:
+            return rejectWithValue("Unauthorized: Invalid or expired token");
+          case 404:
+            return rejectWithValue("No lead sources found");
+          case 500:
+            return rejectWithValue("Server error. Please try again later.");
+          default:
+            return rejectWithValue(
+              axiosError.response.data?.message || "Failed to fetch lead sources"
+            );
+        }
+      }
+      return rejectWithValue(
+        "Network error. Please check your connection and try again."
+      );
+    }
+  }
+);
 export const insertLead = createAsyncThunk<
   InsertLeadResponse,
   {
@@ -481,7 +550,6 @@ export const insertLead = createAsyncThunk<
       if (!token) {
         return rejectWithValue("No authentication token found. Please log in.");
       }
-
       const payload: any = {
         unique_property_id: leadData.unique_property_id,
         fullname: leadData.fullname,
@@ -499,7 +567,6 @@ export const insertLead = createAsyncThunk<
         lead_added_user_type: leadData.lead_added_user_type,
         lead_added_user_id: leadData.lead_added_user_id,
       };
-
       if (leadData.lead_source_id === 6) {
         if (
           !leadData.assigned_user_type ||
@@ -514,7 +581,6 @@ export const insertLead = createAsyncThunk<
         payload.assigned_name = leadData.assigned_name;
         payload.assigned_emp_number = leadData.assigned_emp_number;
       }
-
       const response = await ngrokAxiosInstance.post<InsertLeadResponse>(
         `/meetCRM/v2/leads/createLead`,
         payload,
@@ -524,12 +590,8 @@ export const insertLead = createAsyncThunk<
           },
         }
       );
-
-      console.log("insertLead response:", response.data); // Log response for debugging
-
-      // Check HTTP status for success
       if (response.status === 201) {
-        return response.data; // Return the response data for fulfilled case
+        return response.data;
       } else {
         return rejectWithValue(response.data.message || "Failed to insert lead");
       }
@@ -581,15 +643,12 @@ export const assignLeadToEmployee = createAsyncThunk<
       if (!token) {
         return rejectWithValue("No authentication token found. Please log in.");
       }
-
-     
       const payload = {
         ...assignData,
         status_id: assignData.status_id !== undefined ? assignData.status_id : 1,
       };
-
       const response = await ngrokAxiosInstance.post<AssignLeadResponse>(
-        `/api/v1/leads/assignLeadToEmployee`,
+        `/meetCRM/v2/leads/assignLeads`,
         payload,
         {
           headers: {
@@ -597,11 +656,9 @@ export const assignLeadToEmployee = createAsyncThunk<
           },
         }
       );
-
       if (response.data.status !== "success") {
         return rejectWithValue(response.data.message || "Failed to assign lead");
       }
-
       return response.data;
     } catch (error) {
       const axiosError = error as AxiosError<ErrorResponse>;
@@ -625,7 +682,6 @@ export const assignLeadToEmployee = createAsyncThunk<
     }
   }
 );
-
 export const markLeadAsBooked = createAsyncThunk<
   BookingDoneResponse,
   {
@@ -663,7 +719,6 @@ export const markLeadAsBooked = createAsyncThunk<
       if (!token) {
         return rejectWithValue('No authentication token found. Please log in.');
       }
-
       const payload = {
         lead_id,
         lead_added_user_type,
@@ -676,7 +731,6 @@ export const markLeadAsBooked = createAsyncThunk<
         sqft,
         budget,
       };
-
       const response = await ngrokAxiosInstance.post<BookingDoneResponse>(
         '/api/v1/leads/bookingdone',
         payload,
@@ -686,11 +740,9 @@ export const markLeadAsBooked = createAsyncThunk<
           },
         }
       );
-
       if (response.data.status !== 'success') {
         return rejectWithValue(response.data.message || 'Failed to mark lead as booked');
       }
-
       return response.data;
     } catch (error) {
       const axiosError = error as AxiosError<ErrorResponse>;
@@ -714,7 +766,6 @@ export const markLeadAsBooked = createAsyncThunk<
     }
   }
 );
-
 export const updateLeadByEmployee = createAsyncThunk<
   UpdateLeadByEmployeeResponse,
   {
@@ -738,7 +789,6 @@ export const updateLeadByEmployee = createAsyncThunk<
       if (!token) {
         return rejectWithValue("No authentication token found. Please log in.");
       }
-
       const response = await ngrokAxiosInstance.post<UpdateLeadByEmployeeResponse>(
         `/api/v1/leads/updateLeadByEmployee`,
         updateData,
@@ -748,11 +798,9 @@ export const updateLeadByEmployee = createAsyncThunk<
           },
         }
       );
-
       if (response.data.status !== "success") {
         return rejectWithValue(response.data.message || "Failed to update lead");
       }
-
       return response.data;
     } catch (error) {
       const axiosError = error as AxiosError<ErrorResponse>;
@@ -776,8 +824,6 @@ export const updateLeadByEmployee = createAsyncThunk<
     }
   }
 );
-
-
 const leadSlice = createSlice({
   name: "lead",
   initialState,
@@ -802,6 +848,18 @@ const leadSlice = createSlice({
         state.openLeads = action.payload;
       })
       .addCase(getPropertyEnquiries.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+        .addCase(getTodayLeads.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(getTodayLeads.fulfilled, (state, action) => {
+        state.loading = false;
+        state.todayLeads = action.payload;
+      })
+      .addCase(getTodayLeads.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
       })
@@ -864,7 +922,6 @@ const leadSlice = createSlice({
         state.loading = false;
         state.error = action.payload as string;
       })
-      
       .addCase(getLeadSources.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -877,6 +934,18 @@ const leadSlice = createSlice({
         state.loading = false;
         state.error = action.payload as string;
       })
+         .addCase(getAllMetrics.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(getAllMetrics.fulfilled, (state, action) => {
+        state.loading = false;
+        state.leadMetrics = action.payload;
+      })
+      .addCase(getAllMetrics.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
       .addCase(insertLead.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -884,7 +953,6 @@ const leadSlice = createSlice({
       .addCase(insertLead.fulfilled, (state, action) => {
         state.loading = false;
         state.error = null;
-        // Optionally update state if needed, but handle in handleBulkAssign
       })
       .addCase(insertLead.rejected, (state, action) => {
         state.loading = false;
@@ -906,7 +974,6 @@ const leadSlice = createSlice({
         state.loading = false;
         state.error = action.payload as string;
       })
-
        .addCase(markLeadAsBooked.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -916,7 +983,6 @@ const leadSlice = createSlice({
         if (state.leads) {
           state.leads = state.leads.filter((lead) => lead.lead_id !== action.payload.lead_id);
         }
-        
       })
       .addCase(markLeadAsBooked.rejected, (state, action) => {
         state.loading = false;
@@ -935,6 +1001,5 @@ const leadSlice = createSlice({
       });
   },
 });
-
 export const { clearLeads } = leadSlice.actions;
 export default leadSlice.reducer;

@@ -149,14 +149,11 @@ export const getUsersByType = createAsyncThunk<
 >(
   "user/getUsersByType",
   async ({ created_user_id, user_type }, { rejectWithValue }) => {
-    console.log("getUsersByType called with created_user_id:", created_user_id);
-    console.log("getUsersByType called with user_type:", user_type);
     try {
       const response = await ngrokAxiosInstance.get<UsersResponse>(
         `/meetCRM/v2/getUsersTypeandCreatedBy?created_user_id=${created_user_id}&user_type=${user_type}`,
 
       );
-      console.log("getUsersByType response:", response.data);
       return response.data;
     } catch (error) {
       const axiosError = error as AxiosError<ErrorResponse>;
@@ -288,7 +285,6 @@ export const getUserProfile = createAsyncThunk<
 >(
   "user/getUserProfile",
   async ({ user_id }, { rejectWithValue }) => {
-    console.log("user_idqqqqqqqqqqqqqqqqqqqqqqqqqq:", user_id);
     try {
    const query = user_id
 
@@ -296,7 +292,6 @@ export const getUserProfile = createAsyncThunk<
         `/meetCRM/v2/getEmpProfileData?user_id=${query}`,
 
       );
-      console.log("getUserProfile response:", response.data);
 
       if (!response.data.data || response.data.data.length === 0) {
         return rejectWithValue("User not found");
