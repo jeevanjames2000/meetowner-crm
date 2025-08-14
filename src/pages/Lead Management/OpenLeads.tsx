@@ -21,7 +21,6 @@ import PageBreadcrumbList from "../../components/common/PageBreadCrumbLists";
 import UpdateLeadModal from "./UpdateLeadModel";
 import { sidebarSubItems } from "./CustomComponents";
 import { useNavigate, useParams } from "react-router";
-
 interface PropertyEnquiry {
   lead_id?: number;
   id?: number;
@@ -60,24 +59,12 @@ interface PropertyEnquiry {
     mobile?: string;
   };
 }
-
 const userTypeMap: { [key: number]: string } = {
   3: "Channel Partner",
   4: "Sales Manager",
   5: "Telecallers",
   6: "Marketing Executors",
   7: "Receptionists",
-};
-
-const statusMap: Record<number, string> = {
-  1: "Open",
-  2: "Follow Up",
-  3: "In Progress",
-  4: "Site Visit Scheduled",
-  5: "Site Visit Done",
-  6: "Won",
-  7: "Lost",
-  8: "Revoked",
 };
 
 const formatToIndianCurrency = (value: string | null): string => {
@@ -88,26 +75,20 @@ const formatToIndianCurrency = (value: string | null): string => {
   if (numValue >= 1000) return (numValue / 1000).toFixed(2) + " K";
   return numValue.toString();
 };
-
 const getLeadIdentifier = (item: PropertyEnquiry): string | number => {
   if (item.lead_id !== undefined) return item.lead_id;
   if (item.id !== undefined) return item.id;
   return item.unique_property_id;
 };
-
-// Utility to validate date strings
 const isValidDate = (dateStr: string | null): boolean => {
   if (!dateStr) return false;
   const date = new Date(dateStr);
   return !isNaN(date.getTime());
 };
-
-// Normalize date to YYYY-MM-DD
 const normalizeDate = (dateStr: string | null): string | null => {
   if (!dateStr || !isValidDate(dateStr)) return null;
   return new Date(dateStr).toISOString().split("T")[0];
 };
-
 const OpenLeads: React.FC = () => {
   const [localPage, setLocalPage] = useState<number>(1);
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -122,7 +103,6 @@ const OpenLeads: React.FC = () => {
   const [selectedLeadIdSingle, setSelectedLeadIdSingle] = useState<
     number | string | null
   >(null);
-
   const navigate = useNavigate();
   const { lead_in, status } = useParams<{ lead_in: string; status: string }>();
   const dispatch = useDispatch<AppDispatch>();
@@ -131,44 +111,34 @@ const OpenLeads: React.FC = () => {
     (state: RootState) => state.lead
   );
 
-  console.log("openLeads (raw):", openLeads);
-
-  // Deduplicate leads by unique_property_id, prioritizing lead_id or newer created_date
   const deduplicatedLeads = useMemo(() => {
     const seen = new Map<string, PropertyEnquiry>();
     openLeads?.forEach((item) => {
       const key = item.unique_property_id;
       const existing = seen.get(key);
-      const itemCreatedDate = normalizeDate(item.created_at || item.created_date);
+      const itemCreatedDate = normalizeDate(
+        item.created_at || item.created_date
+      );
       const existingCreatedDate = existing
         ? normalizeDate(existing.created_at || existing.created_date)
         : null;
-
       if (
         !existing ||
         (item.lead_id && !existing.lead_id) ||
-        (itemCreatedDate && existingCreatedDate && itemCreatedDate > existingCreatedDate)
+        (itemCreatedDate &&
+          existingCreatedDate &&
+          itemCreatedDate > existingCreatedDate)
       ) {
         seen.set(key, item);
       }
     });
     const result = Array.from(seen.values());
-    console.log("deduplicatedLeads:", result.map((item: PropertyEnquiry) => ({
-      itemId: item.lead_id || item.id,
-      unique_property_id: item.unique_property_id,
-      fullname: item.fullname,
-      createdDate: normalizeDate(item.created_at || item.created_date),
-      updatedDate: normalizeDate(item.updated_at || item.updated_date),
-    })));
     return result;
   }, [openLeads]);
-
   const userId =
     user?.user_id || parseInt(localStorage.getItem("userId") || "96", 10);
   const itemsPerPage = 10;
   const statusId = parseInt(status || "0", 10);
-
-  // Derive state options
   const stateOptions = useMemo(() => {
     const uniqueStates = [
       ...new Set(
@@ -182,8 +152,6 @@ const OpenLeads: React.FC = () => {
       label: state,
     }));
   }, [deduplicatedLeads]);
-
-  // Derive city options
   const cityOptions = useMemo(() => {
     const filteredLeads = selectedState
       ? deduplicatedLeads?.filter(
@@ -200,13 +168,11 @@ const OpenLeads: React.FC = () => {
       label: city,
     }));
   }, [deduplicatedLeads, selectedState]);
-
   const sidebarItem = sidebarSubItems.find(
     (item) =>
       item.lead_in.toLowerCase() === lead_in?.toLowerCase() &&
       item.status === statusId
   );
-
   const userFilterOptions = useMemo(
     () =>
       Object.entries(userTypeMap).map(([value, label]) => ({
@@ -215,7 +181,6 @@ const OpenLeads: React.FC = () => {
       })),
     []
   );
-
   useEffect(() => {
     dispatch(getPropertyEnquiries({ user_id: userId }))
       .unwrap()
@@ -226,99 +191,64 @@ const OpenLeads: React.FC = () => {
       dispatch(clearLeads());
     };
   }, [dispatch, userId, statusUpdated]);
-
   const filteredLeads = useMemo(() => {
-    const leads = deduplicatedLeads?.filter((item: PropertyEnquiry) => {
-      const itemCreatedDate = item.created_at || item.created_date;
-      const itemUpdatedDate = item.updated_at || item.updated_date;
-
-      const normalizedItemCreatedDate = normalizeDate(itemCreatedDate);
-      const normalizedItemUpdatedDate = normalizeDate(itemUpdatedDate);
-
-      const matchesSearch = !searchQuery
-        ? true
-        : (item.fullname || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
-          (item.mobile || "").includes(searchQuery) ||
-          (item.email || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
-          (item.property_name || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
-          (item.sub_type || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
-          (item.property_for || "").toLowerCase().includes(searchQuery.toLowerCase());
-
-      const matchesUserType = !selectedUserType
-        ? true
-        : item.userDetails?.id?.toString() === selectedUserType;
-
-      const matchesCreatedDate = !createdDate
-        ? true
-        : normalizedItemCreatedDate
+    const leads =
+      deduplicatedLeads?.filter((item: PropertyEnquiry) => {
+        const itemCreatedDate = item.created_at || item.created_date;
+        const itemUpdatedDate = item.updated_at || item.updated_date;
+        const normalizedItemCreatedDate = normalizeDate(itemCreatedDate);
+        const normalizedItemUpdatedDate = normalizeDate(itemUpdatedDate);
+        const matchesSearch = !searchQuery
+          ? true
+          : (item.fullname || "")
+              .toLowerCase()
+              .includes(searchQuery.toLowerCase()) ||
+            (item.mobile || "").includes(searchQuery) ||
+            (item.email || "")
+              .toLowerCase()
+              .includes(searchQuery.toLowerCase()) ||
+            (item.property_name || "")
+              .toLowerCase()
+              .includes(searchQuery.toLowerCase()) ||
+            (item.sub_type || "")
+              .toLowerCase()
+              .includes(searchQuery.toLowerCase()) ||
+            (item.property_for || "")
+              .toLowerCase()
+              .includes(searchQuery.toLowerCase());
+        const matchesUserType = !selectedUserType
+          ? true
+          : item.userDetails?.id?.toString() === selectedUserType;
+        const matchesCreatedDate = !createdDate
+          ? true
+          : normalizedItemCreatedDate
           ? updatedDate
             ? normalizedItemCreatedDate >= createdDate
             : normalizedItemCreatedDate === createdDate
           : false;
-
-      const matchesUpdatedDate = !updatedDate
-        ? true
-        : normalizedItemUpdatedDate && createdDate
-          ? normalizedItemUpdatedDate >= createdDate && normalizedItemUpdatedDate <= updatedDate
+        const matchesUpdatedDate = !updatedDate
+          ? true
+          : normalizedItemUpdatedDate && createdDate
+          ? normalizedItemUpdatedDate >= createdDate &&
+            normalizedItemUpdatedDate <= updatedDate
           : false;
-
-      const matchesState = !selectedState
-        ? true
-        : item.state_id
+        const matchesState = !selectedState
+          ? true
+          : item.state_id
           ? item.state_id.toLowerCase() === selectedState.toLowerCase()
           : false;
-
-      const matchesCity = !selectedCity
-        ? true
-        : item.city_id.toLowerCase() === selectedCity.toLowerCase();
-
-      if (itemCreatedDate && !isValidDate(itemCreatedDate)) {
-        console.warn(`Invalid created_date/at for lead ${item.lead_id || item.id}:`, itemCreatedDate);
-      }
-      if (itemUpdatedDate && !isValidDate(itemUpdatedDate)) {
-        console.warn(`Invalid updated_date/at for lead ${item.lead_id || item.id}:`, itemUpdatedDate);
-      }
-
-      const isMatch =
-        matchesSearch &&
-        matchesUserType &&
-        matchesCreatedDate &&
-        matchesUpdatedDate &&
-        matchesState &&
-        matchesCity;
-
-      console.log("Filter Debug:", {
-        itemId: item.lead_id || item.id,
-        unique_property_id: item.unique_property_id,
-        fullname: item.fullname,
-        searchQuery,
-        matchesSearch,
-        selectedUserType,
-        matchesUserType,
-        createdDate,
-        normalizedItemCreatedDate,
-        matchesCreatedDate,
-        updatedDate,
-        normalizedItemUpdatedDate,
-        matchesUpdatedDate,
-        selectedState,
-        matchesState,
-        selectedCity,
-        matchesCity,
-        isMatch,
-      });
-
-      return isMatch;
-    }) || [];
-
-    console.log("filteredLeads:", leads.map((item: PropertyEnquiry) => ({
-      itemId: item.lead_id || item.id,
-      unique_property_id: item.unique_property_id,
-      fullname: item.fullname,
-      createdDate: normalizeDate(item.created_at || item.created_date),
-      updatedDate: normalizeDate(item.updated_at || item.updated_date),
-    })));
-
+        const matchesCity = !selectedCity
+          ? true
+          : item.city_id.toLowerCase() === selectedCity.toLowerCase();
+        const isMatch =
+          matchesSearch &&
+          matchesUserType &&
+          matchesCreatedDate &&
+          matchesUpdatedDate &&
+          matchesState &&
+          matchesCity;
+        return isMatch;
+      }) || [];
     return leads;
   }, [
     deduplicatedLeads,
@@ -336,27 +266,14 @@ const OpenLeads: React.FC = () => {
     (localPage - 1) * itemsPerPage,
     localPage * itemsPerPage
   );
-
-  console.log("currentLeads:", currentLeads.map((item: PropertyEnquiry) => ({
-    itemId: item.lead_id || item.id,
-    unique_property_id: item.unique_property_id,
-    fullname: item.fullname,
-    createdDate: normalizeDate(item.created_at || item.created_date),
-    updatedDate: normalizeDate(item.updated_at || item.updated_date),
-  })));
-
   const getPageTitle = () => sidebarItem?.name || "Property Enquiries";
-
   const handleSearch = (value: string) => {
-    console.log("Search query:", value);
     setSearchQuery(value.trim());
     setLocalPage(1);
   };
-
   const goToPage = (page: number) => setLocalPage(page);
   const goToPreviousPage = () => localPage > 1 && goToPage(localPage - 1);
   const goToNextPage = () => localPage < totalPages && goToPage(localPage + 1);
-
   const getPaginationItems = () => {
     const pages = [];
     const totalVisiblePages = 7;
@@ -372,37 +289,25 @@ const OpenLeads: React.FC = () => {
     if (endPage < totalPages) pages.push(totalPages);
     return pages;
   };
-
   const handleViewHistory = (item: PropertyEnquiry) => {
     navigate("/leads/view", { state: { property: item } });
   };
-
-  const handleLeadAssign = (leadId: number) => {
-    navigate(`/leads/assign/${leadId}`);
-  };
-
   const handleUpdateModalSubmit = (data: any) => {
     setStatusUpdated(!statusUpdated);
     setIsUpdateModalOpen(false);
     setSelectedLeadId(null);
   };
-
   const handleUserTypeChange = (value: string | null) => {
-    console.log("Selected userType:", value);
     setSelectedUserType(value);
     setLocalPage(1);
   };
-
   const handleCreatedDateChange = (date: string | null) => {
     const normalized = normalizeDate(date);
-    console.log("Selected createdDate:", normalized);
     setCreatedDate(normalized);
     setLocalPage(1);
   };
-
   const handleUpdatedDateChange = (date: string | null) => {
     const normalized = normalizeDate(date);
-    console.log("Selected updatedDate:", normalized);
     if (normalized && createdDate && normalized < createdDate) {
       toast.error("Update date cannot be before start date.");
       return;
@@ -410,20 +315,15 @@ const OpenLeads: React.FC = () => {
     setUpdatedDate(normalized);
     setLocalPage(1);
   };
-
   const handleStateChange = (value: string | null) => {
-    console.log("Selected state:", value);
     setSelectedState(value);
     setSelectedCity(null);
     setLocalPage(1);
   };
-
   const handleCityChange = (value: string | null) => {
-    console.log("Selected city:", value);
     setSelectedCity(value);
     setLocalPage(1);
   };
-
   const handleClearFilters = () => {
     setSelectedUserType(null);
     setCreatedDate(null);
@@ -433,13 +333,11 @@ const OpenLeads: React.FC = () => {
     setSearchQuery("");
     setLocalPage(1);
   };
-
   const handleCheckboxChange = (identifier: string | number) => {
     setSelectedLeadIdSingle((prev) =>
       prev === identifier ? null : identifier
     );
   };
-
   const handleBulkAssign = async () => {
     if (selectedLeadIdSingle === null) {
       toast.error("Please select an enquiry.");
@@ -458,9 +356,9 @@ const OpenLeads: React.FC = () => {
     } else {
       const leadData = {
         unique_property_id: lead.unique_property_id,
-        fullname: lead.fullname || (lead.userDetails?.name || "N/A"),
-        email: lead.email || (lead.userDetails?.email || null),
-        mobile: lead.mobile || (lead.userDetails?.mobile || "N/A"),
+        fullname: lead.fullname || lead.userDetails?.name || "N/A",
+        email: lead.email || lead.userDetails?.email || null,
+        mobile: lead.mobile || lead.userDetails?.mobile || "N/A",
         sub_type: lead.sub_type || "N/A",
         property_for: lead.property_for || "N/A",
         property_in: lead.property_in || "N/A",
@@ -490,18 +388,17 @@ const OpenLeads: React.FC = () => {
       }
     }
   };
-
   const handleBulkViewHistory = () => {
     if (selectedLeadIdSingle === null) {
       toast.error("Please select an enquiry.");
       return;
     }
     const lead = currentLeads.find(
-      (item: PropertyEnquiry) => getLeadIdentifier(item) === selectedLeadIdSingle
+      (item: PropertyEnquiry) =>
+        getLeadIdentifier(item) === selectedLeadIdSingle
     );
     if (lead) handleViewHistory(lead);
   };
-
   return (
     <div className="relative min-h-screen">
       <PageMeta title={`Property Enquiries - ${getPageTitle()}`} />
@@ -563,7 +460,9 @@ const OpenLeads: React.FC = () => {
             <Button
               variant="primary"
               size="sm"
-              onClick={() => dispatch(getPropertyEnquiries({ user_id: userId }))}
+              onClick={() =>
+                dispatch(getPropertyEnquiries({ user_id: userId }))
+              }
               className="ml-4"
             >
               Retry
@@ -670,20 +569,20 @@ const OpenLeads: React.FC = () => {
                       <TableCell className="text-left truncate max-w-[120px]">
                         <span
                           title={
-                            item.fullname || (item.userDetails?.name || "N/A")
+                            item.fullname || item.userDetails?.name || "N/A"
                           }
                         >
-                          {item.fullname || (item.userDetails?.name || "N/A")}
+                          {item.fullname || item.userDetails?.name || "N/A"}
                         </span>
                       </TableCell>
                       <TableCell className="text-left">
-                        {item.mobile || (item.userDetails?.mobile || "N/A")}
+                        {item.mobile || item.userDetails?.mobile || "N/A"}
                       </TableCell>
                       <TableCell className="text-left truncate max-w-[120px]">
                         <span
-                          title={item.email || (item.userDetails?.email || "N/A")}
+                          title={item.email || item.userDetails?.email || "N/A"}
                         >
-                          {item.email || (item.userDetails?.email || "N/A")}
+                          {item.email || item.userDetails?.email || "N/A"}
                         </span>
                       </TableCell>
                       <TableCell className="text-left truncate max-w-[120px]">
@@ -704,10 +603,14 @@ const OpenLeads: React.FC = () => {
                         {item.state_id || "N/A"}
                       </TableCell>
                       <TableCell className="text-center">
-                        {formatToIndianCurrency(item.property_cost || item.budget) || "N/A"}
+                        {formatToIndianCurrency(
+                          item.property_cost || item.budget
+                        ) || "N/A"}
                       </TableCell>
                       <TableCell className="text-center">
-                        {formatToIndianCurrency(item.budget || item.property_cost) || "N/A"}
+                        {formatToIndianCurrency(
+                          item.budget || item.property_cost
+                        ) || "N/A"}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -765,5 +668,4 @@ const OpenLeads: React.FC = () => {
     </div>
   );
 };
-
 export default OpenLeads;

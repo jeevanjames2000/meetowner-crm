@@ -50,7 +50,6 @@ export interface UpdateEmployeeRequest {
 export interface UpdateEmployeeResponse {
   message: string;
 }
-
 export const insertUser = createAsyncThunk<
   InsertUserResponse,
   FormData,
@@ -250,7 +249,7 @@ export const updateUserStatus = createAsyncThunk<
     }
   }
 );
-export const getUserProfile = createAsyncThunk<
+export const getEmpProfile = createAsyncThunk<
   User,
   {user_id: number},
   { rejectValue: string }
@@ -285,6 +284,42 @@ export const getUserProfile = createAsyncThunk<
     }
   }
 );
+
+export const getUserProfile = createAsyncThunk<
+  User,
+  {user_id: number},
+  { rejectValue: string }
+>(
+  "user/getUserProfile",
+  async ({ user_id }, { rejectWithValue }) => {
+    try {
+   const query = user_id
+      const response = await ngrokAxiosInstance.get<UsersResponse>(
+        `/user/v1/getProfile?user_id=${query}`,
+      );
+      return response.data;
+    } catch (error) {
+      const axiosError = error as AxiosError<ErrorResponse>;
+      console.error("Get user profile error:", axiosError);
+      if (axiosError.response) {
+        const status = axiosError.response.status;
+        switch (status) {
+          case 400:
+            return rejectWithValue("Invalid query parameters provided");
+          case 401:
+            return rejectWithValue("Unauthorized: Invalid or expired token");
+          case 404:
+            return rejectWithValue("User not found");
+          case 500:
+            return rejectWithValue("Server error. Please try again later.");
+          default:
+            return rejectWithValue(axiosError.response.data?.message || "Failed to fetch user profile");
+        }
+      }
+      return rejectWithValue("Network error. Please check your connection and try again.");
+    }
+  }
+);
 export const deleteUser = createAsyncThunk<
   DeleteUserResponse,
   { id: number; created_user_id: number; created_user_type: number },
@@ -292,12 +327,10 @@ export const deleteUser = createAsyncThunk<
 >(
   "user/deleteUser",
   async ({ id }, { rejectWithValue }) => {
-    console.log("deleteUser called with id:", id);
     try {
       const response = await ngrokAxiosInstance.delete<DeleteUserResponse>(
         `/meetCRM/v2/deleteEmp?user_id=${id}`,
       );
-      console.log("deleteUser response:", response);
       toast.success(response.data.message);
       return response.data;
     } catch (error) {
@@ -460,7 +493,6 @@ const userSlice = createSlice({
         toast.error(action.payload as string);
       })
      .addCase(getUserProfile.pending, (state) => {
-      console.log("pending")
       state.loading = true;
       state.error = null;
     })
@@ -469,7 +501,6 @@ const userSlice = createSlice({
       state.selectedUser = action.payload;
     })
     .addCase(getUserProfile.rejected, (state, action) => {
-      console.log("rejected")
       state.loading = false;
       state.error = action.payload || "Failed to fetch user profile";
     })

@@ -22,7 +22,6 @@ export interface TimelineEvent {
 }
 
 const Timeline: React.FC<{ data?: TimelineEvent[] }> = ({ data = [] }) => {
-  console.log("data: ", data);
   if (!Array.isArray(data) || data.length === 0) {
     return (
       <p className="text-sm text-gray-500 dark:text-gray-400">

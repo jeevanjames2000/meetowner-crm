@@ -84,7 +84,6 @@ const UpdateLeadModal: React.FC<UpdateLeadModalProps> = ({ leadId, onClose, onSu
         lead_added_user_type: user.created_user_type,
         lead_added_user_id: user.created_user_id,
       };
-      console.log(submitData);
 
       const result = await dispatch(updateLeadByEmployee(submitData)).unwrap();
       setSubmitSuccess(`Lead updated successfully! Lead ID: ${submitData.lead_id}`);

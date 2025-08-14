@@ -60,7 +60,6 @@ const EmpLeads: React.FC = () => {
   const { cpLeads, loading, error } = useSelector(
     (state: RootState) => state.lead
   );
-  console.log("leads: ", cpLeads);
   const {
     admin_user_id,
     admin_user_type,
@@ -69,8 +68,6 @@ const EmpLeads: React.FC = () => {
     assigned_id,
     name,
   } = location.state || {};
-  console.log("assigned_id: ", assigned_id);
-  console.log("user: ", location.state);
   const itemsPerPage = 10;
   useEffect(() => {
     if (isAuthenticated && user?.id) {
@@ -81,7 +78,6 @@ const EmpLeads: React.FC = () => {
         assigned_user_type: user.user_type,
         assigned_id,
       };
-      console.log("params: ", params);
       dispatch(getLeadsByID(params))
         .unwrap()
         .catch((err) => {

@@ -157,9 +157,7 @@ export const loginUser = createAsyncThunk(
         error: "Login failed",
       });
       const response = await promise;
-      console.log(
-        "Login response:", response.data.user_details
-      )
+    
       await dispatch(sendUnifiedOtp({ mobile: credentials.mobile })).unwrap();
       return response.data.user_details
     } catch (error) {
@@ -248,8 +246,6 @@ export const getUserById = createAsyncThunk<
         `/meetCRM/v2/auth/authenticate?user_id=${userId}`,
 
       );
-      console.log("getUserById response:", response.data);
-      console.log("response.data.status ", response.data.status);
       if (response.data.status === "false") {
         return rejectWithValue("User not found");
       }
@@ -281,13 +277,11 @@ export const getUserById = createAsyncThunk<
 export const verifyOtpAdmin = createAsyncThunk(
   "auth/verifyOtpAdmin",
   async ({ mobile, otp }: VerifyOtpRequest, { rejectWithValue, getState }) => {
-    console.log("verifyOtpAdmin params:", { mobile, otp });
     try {
       const state = getState() as { auth: AuthState };
       const storedOtp = state.auth.otp;
       if (storedOtp && otp === storedOtp) {
         const userDetails = state.auth.tempUser
-        console.log("userDetails: ", userDetails);
         const userId = state.auth.tempUser?.user_id;
         if (!userId) {
           throw new Error("User ID not found in temporary state");

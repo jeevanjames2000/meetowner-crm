@@ -80,21 +80,16 @@ const FilterBar: React.FC<FilterBarProps> = ({
   const [stateOptions, setStateOptions] = useState<SelectOption[]>([]);
   const [cityOptions, setCityOptions] = useState<SelectOption[]>([]);
 
-
-
-
-
   // Fetch States on mount
   useEffect(() => {
     const fetchStates = async () => {
       try {
-        const res = await axios.get<{ state: string; state_id: number; status: string }[]>(
-          "https://api.meetowner.in/api/v1/getAllStates"
-        );
+        const res = await axios.get<
+          { state: string; state_id: number; status: string }[]
+        >("https://api.meetowner.in/api/v1/getAllStates");
 
         const activeStates = res.data.filter((s) => s.status === "active");
 
-        
         setStateOptions(
           activeStates.map((s) => ({
             value: s.state,
@@ -111,7 +106,6 @@ const FilterBar: React.FC<FilterBarProps> = ({
   // Fetch Cities when state changes
   useEffect(() => {
     const fetchCitiesByState = async () => {
-      console.log("selectedState::::::::::::::::::::::::::::::::::::::", selectedState);
       if (!selectedState) {
         setCityOptions([]);
         return;
@@ -120,9 +114,7 @@ const FilterBar: React.FC<FilterBarProps> = ({
         const res = await axios.get<{ city: string; status: string }[]>(
           `https://api.meetowner.in/api/v1/getAllCities?state_id=${selectedState}`
         );
-        console.log("response:", res);
         const activeCities = res.data.filter((c) => c.state === selectedState);
-        console.log("activeCities:::::", activeCities);
         setCityOptions(
           activeCities.map((c) => ({
             value: c.city,
@@ -202,32 +194,38 @@ const FilterBar: React.FC<FilterBarProps> = ({
             />
           </div>
         )} */}
-        {(
-            <div className="w-[100px] flex-shrink-0">
-          <Dropdown
-            id="state"
-            options={stateOptions.map(s => ({ value: s.value, text: s.label }))}
-            value={selectedState || ""}
-            onChange={(value) => {
-              onStateChange?.(value || null);
-              if (value !== selectedState) {
-                onCityChange?.(null);
-              }
-            }}
-            placeholder="state..."
-          />
+        {
+          <div className="w-[100px] flex-shrink-0">
+            <Dropdown
+              id="state"
+              options={stateOptions.map((s) => ({
+                value: s.value,
+                text: s.label,
+              }))}
+              value={selectedState || ""}
+              onChange={(value) => {
+                onStateChange?.(value || null);
+                if (value !== selectedState) {
+                  onCityChange?.(null);
+                }
+              }}
+              placeholder="state..."
+            />
           </div>
-        )}
+        }
         {showCityFilter && (
-            <div className="w-[100px] flex-shrink-0">
-          <Dropdown
-            id="city"
-            options={cityOptions.map(c => ({ value: c.value, text: c.label }))}
-            value={selectedCity || ""}
-            onChange={(value) => onCityChange?.(value || null)}
-            placeholder="city..."
-            disabled={!selectedState}
-          />
+          <div className="w-[100px] flex-shrink-0">
+            <Dropdown
+              id="city"
+              options={cityOptions.map((c) => ({
+                value: c.value,
+                text: c.label,
+              }))}
+              value={selectedCity || ""}
+              onChange={(value) => onCityChange?.(value || null)}
+              placeholder="city..."
+              disabled={!selectedState}
+            />
           </div>
         )}
         <div className="flex items-center gap-2">
@@ -285,14 +283,14 @@ const FilterBar: React.FC<FilterBarProps> = ({
           displayCreatedEndDateFilter ||
           displayUpdatedDateFilter ||
           showStatusFilter) && (
-            <Button
-              variant="outline"
-              onClick={handleClearFilters}
-              className="px-3 py-2 ml-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm whitespace-nowrap flex-shrink-0"
-            >
-              Clear
-            </Button>
-          )}
+          <Button
+            variant="outline"
+            onClick={handleClearFilters}
+            className="px-3 py-2 ml-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm whitespace-nowrap flex-shrink-0"
+          >
+            Clear
+          </Button>
+        )}
       </div>
     </div>
   );

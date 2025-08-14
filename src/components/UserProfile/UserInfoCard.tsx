@@ -1,45 +1,23 @@
-
-import { useSelector } from 'react-redux';
-import { RootState } from '../../store/store';
-import { Building2, IdCard, BadgeCheck, FileText, MapPin, } from 'lucide-react';
+import { useSelector } from "react-redux";
+import { RootState } from "../../store/store";
+import { IdCard, BadgeCheck } from "lucide-react";
 
 export default function UserInfoCard() {
   const { selectedUser } = useSelector((state: RootState) => state.user);
 
   const infoItems = [
-   
     {
       icon: IdCard,
-      label: "Aadhar Card",
-      value: selectedUser?.aadhar_number || "N/A",
+      label: "GST Number",
+      value: selectedUser?.gst_number || "N/A",
       gradient: "from-sky-500 to-cyan-600",
     },
     {
       icon: BadgeCheck,
-      label: "PAN Card",
-      value: selectedUser?.pan_card_number || "N/A",
-      gradient: "from-indigo-500 to-purple-600",
-    },
-    {
-      icon: FileText,
       label: "RERA Number",
       value: selectedUser?.rera_number || "N/A",
       gradient: "from-emerald-500 to-green-600",
     },
-      {
-      icon: Building2,
-      label: "Company Name",
-      value: selectedUser?.company_name || "N/A",
-      gradient: "from-pink-500 to-rose-500",
-    },
-    {
-      icon: MapPin,
-      label: "Company Address",
-      value: selectedUser?.company_address || "N/A",
-      gradient: "from-yellow-500 to-orange-500",
-    },
-  
-  
   ];
 
   return (
@@ -80,11 +58,10 @@ export default function UserInfoCard() {
       </div>
 
       <div className="mt-10 pt-6 border-t border-slate-200 dark:border-slate-700 flex justify-between text-sm text-slate-500 dark:text-slate-400">
-        <div className="flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-          <span>Active Company Profile</span>
-        </div>
-        <span>Last updated: Today</span>
+        <span>
+          Last updated:{" "}
+          {new Date(selectedUser?.updated_date).toLocaleDateString()}
+        </span>
       </div>
     </div>
   );

@@ -24,6 +24,7 @@ import EmpLeads from "./pages/Lead Management/EmpLeads";
 import OpenLeads from "./pages/Lead Management/OpenLeads";
 import TodayLeads from "./pages/Lead Management/TodayLeads";
 import EditEmployee from "./pages/Employee Management/EditEmployee";
+import UserProfiles from "./pages/UserProfiles";
 const LeadsType = lazy(() => import("./pages/Lead Management/LeadsType"));
 
 export default function App() {
@@ -40,7 +41,7 @@ export default function App() {
           <Route element={<ProtectedRoute />}>
             <Route element={<AppLayout />}>
               <Route index path="/" element={<Home />} />
-              <Route index path="/" element={<Home />} />
+              <Route index path="/profile" element={<UserProfiles />} />
 
               <Route path="/leads/:lead_in/:status" element={<LeadsType />} />
               <Route path="/openLeads" element={<OpenLeads />} />

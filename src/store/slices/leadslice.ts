@@ -293,7 +293,6 @@ export const getLeadUpdatesByLeadId = createAsyncThunk<
         `/meetCRM/v2/leads/getLeadUpdatesByLeadId?${queryParams}`,
         
       );
-      console.log("response.data.: ", response.data);
       if (!response.data.updates || response.data.updates.length === 0) {
         return rejectWithValue("No lead updates found");
       }

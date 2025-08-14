@@ -186,7 +186,6 @@ const LeadForm: React.FC = () => {
         lead_added_user_id: 4,
       };
       dispatch(insertLead(leadData)).unwrap();
-      console.log("call");
       dispatch(getPropertyEnquiries({ user_id: userId })).unwrap();
       setSubmitSuccess(`Lead created successfully!`);
       toast.success("Lead created successfully!");
@@ -204,7 +203,6 @@ const LeadForm: React.FC = () => {
         budget: "",
       });
     } catch (error: any) {
-      console.log("error: ", error);
       setSubmitError(error || "Failed to create lead. Please try again.");
     } finally {
       setIsSubmitting(false);

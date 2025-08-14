@@ -3,9 +3,12 @@ import { useNavigate, useParams } from "react-router";
 import { useSelector, useDispatch } from "react-redux";
 import Button from "../../components/ui/button/Button";
 import { RootState, AppDispatch } from "../../store/store";
-import { getUserById, clearUsers, getUserProfile } from "../../store/slices/userslice";
-
-
+import {
+  getUserById,
+  clearUsers,
+  getUserProfile,
+  getEmpProfile,
+} from "../../store/slices/userslice";
 
 const statusText = (status: number) => {
   switch (status) {
@@ -37,30 +40,29 @@ const EmployeeDetail = () => {
   const { id, status } = useParams<{ id: string; status: string }>();
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
-  const { user, isAuthenticated } = useSelector((state: RootState) => state.auth);
-  console.log("user:", user?.
-user_id);
-  const { selectedUser, loading, error } = useSelector((state: RootState) => state.user);
-  console.log("selectedUser: ", selectedUser);
-  const empUserType = Number(status);
-
+  const { user, isAuthenticated } = useSelector(
+    (state: RootState) => state.auth
+  );
+  const { selectedUser, loading, error } = useSelector(
+    (state: RootState) => state.user
+  );
 
   useEffect(() => {
     if (isAuthenticated && user?.user_id) {
-  dispatch(getUserProfile({ user_id: id}));
-}
+      dispatch(getEmpProfile({ user_id: id }));
+    }
 
     return () => {
       dispatch(clearUsers());
     };
-  }, [isAuthenticated, user, id,dispatch]);
-
-
-
-
+  }, [isAuthenticated, user, id, dispatch]);
 
   if (loading) {
-    return <div className="p-4 text-center text-gray-600 dark:text-gray-400">Loading employee details...</div>;
+    return (
+      <div className="p-4 text-center text-gray-600 dark:text-gray-400">
+        Loading employee details...
+      </div>
+    );
   }
 
   if (error) {
@@ -86,7 +88,11 @@ user_id);
   }
 
   if (!selectedUser) {
-    return <div className="p-4 text-center text-gray-600 dark:text-gray-400">Employee not found</div>;
+    return (
+      <div className="p-4 text-center text-gray-600 dark:text-gray-400">
+        Employee not found
+      </div>
+    );
   }
 
   return (
@@ -106,7 +112,7 @@ user_id);
       <div className="rounded-xl shadow-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6 p-8">
           <Info label="Name" value={selectedUser.name} />
-         
+
           <Info label="Mobile" value={selectedUser.mobile} />
           <Info label="Email" value={selectedUser.email} />
           <Info label="Address" value={selectedUser.address} />
@@ -130,14 +136,19 @@ user_id);
           />
           <Info
             label="Created On"
-            value={new Date(selectedUser.created_date).toLocaleDateString("en-IN", {
-              year: "numeric",
-              month: "long",
-              day: "numeric",
-            })}
+            value={new Date(selectedUser.created_date).toLocaleDateString(
+              "en-IN",
+              {
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+              }
+            )}
           />
-          <Info label="Created Time" value={selectedUser.created_time || "N/A"} />
-          
+          <Info
+            label="Created Time"
+            value={selectedUser.created_time || "N/A"}
+          />
         </div>
       </div>
     </div>
