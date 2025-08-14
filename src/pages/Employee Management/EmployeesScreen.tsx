@@ -30,10 +30,12 @@ const userTypeMap: { [key: number]: string } = {
   3: "Telecallers",
   4: "Marketing Executors",
 };
+
 const formatDate = (dateString: string): string => {
   const date = new Date(dateString);
   return date.toISOString().split("T")[0];
 };
+
 export default function EmployeesScreen() {
   const { status } = useParams<{ status: string }>();
   const navigate = useNavigate();
@@ -128,15 +130,18 @@ export default function EmployeesScreen() {
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
   const paginatedUsers = filteredUsers.slice(startIndex, endIndex);
+
   const handleViewProfile = (id: number) => {
     if (isAuthenticated && user?.user_id && empUserType) {
       dispatch(getUserProfile({ user_id: Number(id) }));
       navigate(`/employeedetails/${empUserType}/${id}`);
     }
   };
+
   const handleConfirmDelete = async () => {
     if (selectedUser) {
       try {
+        await dispatch(deleteUser({ id: selectedUser.id })).unwrap();
         await dispatch(deleteUser({ id: selectedUser.id })).unwrap();
         setStatusUpdated(!statusUpdated);
         setIsDeleteModalOpen(false);
@@ -149,31 +154,38 @@ export default function EmployeesScreen() {
       }
     }
   };
+
   const handleCancelDelete = () => {
     setIsDeleteModalOpen(false);
     setSelectedUser(null);
   };
+
   const handleFilter = (value: string) => {
     setFilterValue(value);
     setCurrentPage(1);
   };
+
   const handleCreatedDateChange = (date: string | null) => {
     setCreatedDate(date);
     setCurrentPage(1);
   };
+
   const handleCreatedEndDateChange = (date: string | null) => {
     setCreatedEndDate(date);
     setCurrentPage(1);
   };
+
   const handleStateChange = (value: string | null) => {
     setSelectedState(value);
-    setSelectedCity(null);
+    setSelectedCity(null); // Reset city when state changes
     setCurrentPage(1);
   };
+
   const handleCityChange = (value: string | null) => {
     setSelectedCity(value);
     setCurrentPage(1);
   };
+
   const handleClearFilters = () => {
     setFilterValue("");
     setCreatedDate(null);
@@ -182,9 +194,11 @@ export default function EmployeesScreen() {
     setSelectedCity(null);
     setCurrentPage(1);
   };
+
   const handleCheckboxChange = (userId: number) => {
     setSelectedUserId((prev) => (prev === userId ? null : userId));
   };
+
   const handleBulkViewProfile = () => {
     if (selectedUserId === null) {
       toast.error("Please select an employee.");
@@ -285,7 +299,7 @@ export default function EmployeesScreen() {
               onClick={() =>
                 dispatch(
                   getUsersByType({
-                    created_user_id: user!.id,
+                    created_user_id: user!.user_id,
                     user_type: empUserType,
                   })
                 )
@@ -416,7 +430,7 @@ export default function EmployeesScreen() {
         )}
         {totalItems > itemsPerPage && (
           <div className="flex flex-col sm:flex-row justify-between items-center mt-4 px-4 py-2 gap-4">
-            <div className="text-sm text-gray-500 dark:text-gray-400">
+            <div className="text-sm text-gray-600 dark:text-gray-400">
               Showing {startIndex + 1} to {endIndex} of {totalItems} entries
             </div>
             <Pagination
