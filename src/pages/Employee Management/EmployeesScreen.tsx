@@ -46,7 +46,7 @@ export default function EmployeesScreen() {
   const { users, loading, error } = useSelector(
     (state: RootState) => state.user
   );
-  const { states } = useSelector((state: RootState) => state.places);
+
   const { citiesQuery } = usePropertyQueries();
   const [filterValue, setFilterValue] = useState<string>("");
   const [currentPage, setCurrentPage] = useState<number>(1);
@@ -62,22 +62,8 @@ export default function EmployeesScreen() {
   const itemsPerPage = 10;
   const empUserType = Number(status);
   const categoryLabel = userTypeMap[empUserType] || "Employees";
-  const citiesResult = citiesQuery(selectedState ? selectedState : undefined);
-  useEffect(() => {}, [states, citiesResult.data]);
-  useEffect(() => {
-    if (citiesResult.data) {
-      dispatch(setCityDetails(citiesResult.data));
-    }
-  }, [citiesResult.data, dispatch]);
-  useEffect(() => {
-    if (citiesResult.isError) {
-      toast.error(
-        `Failed to fetch cities: ${
-          citiesResult.error?.message || "Unknown error"
-        }`
-      );
-    }
-  }, [citiesResult.isError, citiesResult.error]);
+
+ 
   useEffect(() => {
     if (isAuthenticated && user?.user_id && empUserType) {
       dispatch(
@@ -112,19 +98,17 @@ export default function EmployeesScreen() {
         .some((field) => field.includes(filterValue.toLowerCase()));
       const userCreatedDate = formatDate(user.created_date);
       const matchesCreatedDate =
-        (!createdDate || userCreatedDate >= createdDate) &&
-        (!createdEndDate || userCreatedDate <= createdEndDate);
-      const matchesState =
-        !selectedState ||
-        user.state?.toLowerCase() === selectedState.toLowerCase();
-      const cityName =
-        citiesResult.data?.find((c) => c.name === selectedCity)?.name || "";
-      const matchesCity =
-        !selectedCity || user.city?.toLowerCase() === cityName.toLowerCase();
-      return (
-        matchesTextFilter && matchesCreatedDate && matchesState && matchesCity
-      );
-    }) || [];
+      (!createdDate || userCreatedDate >= createdDate) &&
+      (!createdEndDate || userCreatedDate <= createdEndDate);
+
+    // Match state (assuming selectedState is a label like "Andhra Pradesh")
+    const matchesState = !selectedState || user.state?.toLowerCase() === selectedState.toLowerCase();
+
+    // Match city (assuming selectedCity is a label like "Visakhapatnam")
+    const matchesCity = !selectedCity || user.city?.toLowerCase() === selectedCity.toLowerCase();
+
+    return matchesTextFilter && matchesCreatedDate && matchesState && matchesCity;
+  }) || [];
   const totalItems = filteredUsers.length;
   const totalPages = Math.ceil(totalItems / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
