@@ -50,7 +50,7 @@ const ProtectedRoute: React.FC = () => {
         const res = await dispatch(
           getUserById({ userId, token: queryToken })
         ).unwrap();
-        console.log("res: ", res.user);
+        console.log("res: ", res.user.crm_access);
 
         if (res?.user?.crm_access === 1) {
           setIsValidUser(true);
