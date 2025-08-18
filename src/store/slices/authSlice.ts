@@ -573,6 +573,7 @@ const authSlice = createSlice({
       .addCase(getUserById.fulfilled, (state, action) => {
         state.user = {
           id: action.payload.user.user_id,
+          user_id: action.payload.user.user_id,
           name: action.payload.user.name,
           email: action.payload.user.email,
           photo: action.payload.user.photo,

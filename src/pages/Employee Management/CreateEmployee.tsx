@@ -50,9 +50,7 @@ const CreateEmployee = () => {
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
   const { loading } = useSelector((state: RootState) => state.user);
-  const { user, isAuthenticated } = useSelector(
-    (state: RootState) => state.auth
-  );
+  const { user } = useSelector((state: RootState) => state.auth);
   const { cities, states, localities } = useSelector(
     (state: RootState) => state.places
   );
