@@ -570,19 +570,12 @@ const authSlice = createSlice({
         state.loading = true;
         state.error = null;
       })
-      .addCase(getUserById.fulfilled, (state, action) => {
-        state.user = {
-          id: action.payload.user.user_id,
-          user_id: action.payload.user.user_id,
-          name: action.payload.user.name,
-          email: action.payload.user.email,
-          photo: action.payload.user.photo,
-          mobile: action.payload.user.mobile,
-          subscription_package: action.payload.user.subscription_package,
-          subscription_status: action.payload.user.subscription_status,
-          crm_access: action.payload.user.crm_access,
-        };
-      })
+    .addCase(getUserById.fulfilled, (state, action) => {
+  state.user = {
+    user_id: action.payload.user.user_id,
+    ...action.payload.user
+  };
+})
       .addCase(getUserById.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;

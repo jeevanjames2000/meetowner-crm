@@ -200,11 +200,13 @@ const OpenLeads: React.FC = () => {
         const normalizedItemUpdatedDate = normalizeDate(itemUpdatedDate);
         const matchesSearch = !searchQuery
           ? true
-          : (item.fullname || "")
+          : (item.fullname || item.userDetails?.name || "")
               .toLowerCase()
               .includes(searchQuery.toLowerCase()) ||
-            (item.mobile || "").includes(searchQuery) ||
-            (item.email || "")
+            (item.mobile || item.userDetails?.mobile || "").includes(
+              searchQuery
+            ) ||
+            (item.email || item.userDetails?.email || "")
               .toLowerCase()
               .includes(searchQuery.toLowerCase()) ||
             (item.property_name || "")
