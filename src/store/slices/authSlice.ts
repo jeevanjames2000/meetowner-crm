@@ -425,6 +425,9 @@ const authSlice = createSlice({
     },
     setToken:(state,action)=>{
       state.token=action.payload
+    },
+    setisAuthenticated:(state,action)=>{
+      state.isAuthenticated=action.payload
     }
   },
   extraReducers: (builder) => {
@@ -608,5 +611,5 @@ export const isTokenExpired = (token: string | null): boolean => {
     return true;
   }
 };
-export const { logout, resetOtpState,setToken } = authSlice.actions;
+export const { logout, resetOtpState,setToken,setisAuthenticated } = authSlice.actions;
 export default authSlice.reducer;
