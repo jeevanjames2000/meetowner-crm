@@ -29,13 +29,12 @@ export default function UserDropdown() {
     closeDropdown();
     navigate("/signin");
   };
-
   useEffect(() => {
-    if (isAuthenticated && token && isTokenExpired(token)) {
+    if (token && isTokenExpired(token)) {
       dispatch(logout());
       navigate("/signin");
     }
-  }, [isAuthenticated, token, dispatch, navigate]);
+  }, [token, dispatch, navigate]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {

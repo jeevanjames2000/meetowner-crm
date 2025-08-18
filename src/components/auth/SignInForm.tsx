@@ -23,7 +23,6 @@ export default function SignInForm() {
   const submitButtonRef = useRef<HTMLButtonElement>(null);
   const [formData, setFormData] = useState({
     mobile: "",
-
     otp: "",
     countryCode: "+91",
   });
@@ -34,6 +33,7 @@ export default function SignInForm() {
     general: "",
   });
   const {
+    tempToken,
     isAuthenticated,
     loading,
     tempUser,
@@ -127,7 +127,6 @@ export default function SignInForm() {
     try {
       await dispatch(
         verifyOtpAdmin({
-          mobile: formData.mobile,
           otp: formData.otp,
         })
       ).unwrap();

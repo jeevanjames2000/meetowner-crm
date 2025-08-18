@@ -148,7 +148,7 @@ export const loginUser = createAsyncThunk(
   "auth/loginUser",
   async (credentials: LoginRequest, { rejectWithValue, dispatch }) => {
     try {
-      const promise = ngrokAxiosInstance.post<LoginResponse>("/meetCRM/v2/auth/authCRMLogin", { // meetCRM/v2/auth/authenticate?user_id=1070
+      const promise = ngrokAxiosInstance.post("/meetCRM/v2/auth/authCRMLogin", {
         mobile: credentials.mobile,
       });
       toast.promise(promise, {
@@ -157,28 +157,52 @@ export const loginUser = createAsyncThunk(
         error: "Login failed",
       });
       const response = await promise;
-      console.log(response.data.user_details, "responseuser_details")
+      if (response.data.status !== "success") {
+        throw new Error(response.data.message || "Login failed");
+      }
       await dispatch(sendUnifiedOtp({ mobile: credentials.mobile })).unwrap();
-      return response.data.user_details
+      return {
+        id: response.data.user_details.id,
+        user_id: response.data.user_details.user_id,
+        mobile: response.data.user_details.mobile,
+        name: response.data.user_details.name,
+        user_type: response.data.user_details.user_type,
+        email: response.data.user_details.email,
+        state: response.data.user_details.state,
+        city: response.data.user_details.city,
+        pincode: response.data.user_details.pincode,
+        status: response.data.user_details.status,
+        created_userID: response.data.user_details.created_userID,
+        created_by: response.data.user_details.created_by,
+        photo: response.data.user_details.photo,
+        alt_mobile: response.data.user_details.alt_mobile,
+        address: response.data.user_details.address,
+        gst_number: response.data.user_details.gst_number,
+        rera_number: response.data.user_details.rera_number,
+        designation: response.data.user_details.designation,
+        created_date: response.data.user_details.created_date,
+        created_time: response.data.user_details.created_time,
+        updated_date: response.data.user_details.updated_date,
+        updated_time: response.data.user_details.updated_time,
+        location: response.data.user_details.location,
+        from_app: response.data.user_details.from_app,
+        uploaded_from_seller_panel: response.data.user_details.uploaded_from_seller_panel,
+        accessToken: response.data.accessToken,
+      };
     } catch (error) {
       const axiosError = error as AxiosError<ErrorResponse>;
-
-
-
       if (axiosError.response) {
         const backendMessage =
           axiosError.response.data?.message ||
           axiosError.response.data?.error ||
           null;
-
-        // Always prefer backend message if available
         if (backendMessage) {
           return rejectWithValue(backendMessage);
         }
         const status = axiosError.response.status;
         switch (status) {
           case 401:
-            return rejectWithValue("Invalid mobile number or password");
+            return rejectWithValue("Invalid mobile number");
           case 404:
             return rejectWithValue("Login service not found (404). Please try again later.");
           case 500:
@@ -240,16 +264,13 @@ export const getUserById = createAsyncThunk<
 >(
   "auth/v1/getUserById",
   async ({ userId, token }, { rejectWithValue }) => {
-
     try {
       const response = await ngrokAxiosInstance.get<{ user: User }>(
         `/meetCRM/v2/auth/authenticate?user_id=${userId}`,
-
       );
       if (response.data.status === "false") {
         return rejectWithValue("User not found");
       }
-
       return { user: response.data.data, token };
     } catch (error) {
       const axiosError = error as AxiosError<ErrorResponse>;
@@ -273,22 +294,32 @@ export const getUserById = createAsyncThunk<
     }
   }
 );
-
 export const verifyOtpAdmin = createAsyncThunk(
   "auth/verifyOtpAdmin",
-  async ({ otp }: { otp: string }, { rejectWithValue, getState }) => {
-    const state = getState() as { auth: AuthState };
-    const storedOtp = state.auth.otp;
-
-    if (!storedOtp || otp !== storedOtp) {
-      return rejectWithValue("Invalid OTP");
+  async ({ mobile, otp }: VerifyOtpRequest, { rejectWithValue, getState }) => {
+    try {
+      const state = getState() as { auth: AuthState };
+      const storedOtp = state.auth.otp;
+      if (otp !== storedOtp) {
+        throw new Error("Invalid OTP");
+      }
+      return {
+        status: "success",
+        message: "OTP verified successfully",
+        user: state.tempUser,
+        token: state.tempToken,
+      };
+    } catch (error) {
+      const axiosError = error as AxiosError<ErrorResponse> | Error;
+      console.error("Verify OTP error:", axiosError);
+      const errorMessage =
+        axiosError instanceof AxiosError
+          ? axiosError.response?.data?.message || "Failed to verify OTP"
+          : axiosError.message || "Failed to verify OTP";
+      return rejectWithValue(errorMessage);
     }
-
-    // Success
-    return { status: "success", message: "OTP verified successfully" };
   }
 );
-
 export const verifyWhatsappOtpLocally = createAction<{ otp: string }>("auth/verifyWhatsappOtpLocally");
 export const getProfile = createAsyncThunk(
   "auth/getProfile",
@@ -392,24 +423,47 @@ const authSlice = createSlice({
       state.otp = null;
       state.isWhatsappFlow = false;
     },
-
+    setToken:(state,action)=>{
+      state.token=action.payload
+    }
   },
   extraReducers: (builder) => {
     builder
-      .addCase(loginUser.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
       .addCase(loginUser.fulfilled, (state, action) => {
         state.loading = false;
-        state.tempUser = { ...action.payload };
-        state.tempToken = action.payload.token;
+        state.tempUser = {
+          user_id: action.payload.id,
+          mobile: action.payload.mobile,
+          name: action.payload.name,
+          user_type: action.payload.user_type,
+          email: action.payload.email || "",
+          state: action.payload.state || null,
+          city: action.payload.city || null,
+          pincode: action.payload.pincode || null,
+          status: action.payload.status ?? null,
+          created_userID: action.payload.created_userID ?? null,
+          created_by: action.payload.created_by || null,
+          photo: action.payload.photo || null,
+          alt_mobile: action.payload.alt_mobile || null,
+          address: action.payload.address || null,
+          gst_number: action.payload.gst_number || null,
+          rera_number: action.payload.rera_number || null,
+          designation: action.payload.designation || null,
+          created_date: action.payload.created_date || null,
+          created_time: action.payload.created_time || null,
+          updated_date: action.payload.updated_date || null,
+          updated_time: action.payload.updated_time || null,
+          location: action.payload.location || null,
+          from_app: action.payload.from_app || null,
+          uploaded_from_seller_panel: action.payload.uploaded_from_seller_panel || null,
+        };
+        state.tempToken = action.payload.accessToken;
       })
       .addCase(loginUser.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
       })
-      .addCase(sendUnifiedOtp.pending, (state) => {
+     .addCase(sendUnifiedOtp.pending, (state) => {
         state.loading = true;
         state.error = null;
         state.isWhatsappFlow = false;
@@ -420,6 +474,7 @@ const authSlice = createSlice({
         state.otp = action.payload.otp;
       })
       .addCase(sendUnifiedOtp.rejected, (state, action) => {
+        
         state.loading = false;
         state.error = action.payload as string;
         state.tempUser = null;
@@ -430,15 +485,26 @@ const authSlice = createSlice({
         state.loading = true;
         state.error = null;
       })
-      .addCase(verifyOtpAdmin.fulfilled, (state) => {
+      .addCase(verifyOtpAdmin.fulfilled, (state, action) => {
         state.loading = false;
         state.otpVerified = true;
         state.isAuthenticated = true;
         state.user = state.tempUser;
         state.token = state.tempToken;
-        localStorage.setItem("userDetails", JSON.stringify(state.tempUser))
-        localStorage.setItem("token", state.tempUser.token)
-
+        if (state.tempUser) {
+          localStorage.setItem("userDetails", JSON.stringify(state.tempUser));
+          localStorage.setItem("name", state.tempUser.name);
+          localStorage.setItem("userType", state.tempUser.user_type.toString());
+          localStorage.setItem("email", state.tempUser.email || "");
+          localStorage.setItem("mobile", state.tempUser.mobile);
+          localStorage.setItem("city", state.tempUser.city || "");
+          localStorage.setItem("state", state.tempUser.state || "");
+          localStorage.setItem("userId", state.tempUser.user_id.toString());
+          localStorage.setItem("photo", state.tempUser.photo || "");
+        }
+        if (state.tempToken) {
+          localStorage.setItem("token", state.tempToken);
+        }
       })
       .addCase(verifyOtpAdmin.rejected, (state, action) => {
         state.loading = false;
@@ -498,12 +564,10 @@ const authSlice = createSlice({
         localStorage.clear();
       })
       .addCase(getUserById.pending, (state) => {
-
         state.loading = true;
         state.error = null;
       })
       .addCase(getUserById.fulfilled, (state, action) => {
-
         state.user = {
           id: action.payload.user.user_id,
           name: action.payload.user.name,
@@ -514,10 +578,8 @@ const authSlice = createSlice({
           subscription_status: action.payload.user.subscription_status,
           crm_access: action.payload.user.crm_access,
         };
-
       })
       .addCase(getUserById.rejected, (state, action) => {
-
         state.loading = false;
         state.error = action.payload as string;
       })
@@ -546,5 +608,5 @@ export const isTokenExpired = (token: string | null): boolean => {
     return true;
   }
 };
-export const { logout, resetOtpState } = authSlice.actions;
+export const { logout, resetOtpState,setToken } = authSlice.actions;
 export default authSlice.reducer;

@@ -147,13 +147,7 @@ const CreateEmployee = () => {
       });
     }
   }, [dispatch, formData.city, formData.state]);
-  useEffect(() => {
-    if (!isAuthenticated || !user) {
-      navigate("/login");
-      toast.error("Please log in to access this page");
-      return;
-    }
-  }, [isAuthenticated, user, navigate]);
+
   const debouncedFetchLocalities = useCallback(
     debounce((city: string, state: string, query: string) => {
       dispatch(fetchLocalities({ city, state, query }));
