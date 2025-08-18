@@ -22,7 +22,6 @@ import PageBreadcrumbList from "../../components/common/PageBreadCrumbLists";
 import UpdateLeadModal from "./UpdateLeadModel";
 import { sidebarSubItems } from "./CustomComponents";
 import { useNavigate, useParams } from "react-router";
-
 interface PropertyEnquiry {
   lead_id?: number;
   id?: number;
@@ -61,7 +60,6 @@ interface PropertyEnquiry {
     mobile?: string;
   };
 }
-
 const userTypeMap: { [key: number]: string } = {
   3: "Channel Partner",
   4: "Sales Manager",
@@ -69,7 +67,6 @@ const userTypeMap: { [key: number]: string } = {
   6: "Marketing Executors",
   7: "Receptionists",
 };
-
 const formatToIndianCurrency = (value: string | null): string => {
   if (!value || isNaN(parseFloat(value))) return "N/A";
   const numValue = parseFloat(value);
@@ -78,26 +75,20 @@ const formatToIndianCurrency = (value: string | null): string => {
   if (numValue >= 1000) return (numValue / 1000).toFixed(2) + " K";
   return numValue.toString();
 };
-
 const getLeadIdentifier = (item: PropertyEnquiry): string | number => {
   if (item.lead_id !== undefined) return item.lead_id;
   if (item.id !== undefined) return item.id;
   return item.unique_property_id;
 };
-
-// Utility to validate date strings
 const isValidDate = (dateStr: string | null): boolean => {
   if (!dateStr) return false;
   const date = new Date(dateStr);
   return !isNaN(date.getTime());
 };
-
-// Normalize date to YYYY-MM-DD
 const normalizeDate = (dateStr: string | null): string | null => {
   if (!dateStr || !isValidDate(dateStr)) return null;
   return new Date(dateStr).toISOString().split("T")[0];
 };
-
 const TodayLeads: React.FC = () => {
   const [localPage, setLocalPage] = useState<number>(1);
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -112,7 +103,6 @@ const TodayLeads: React.FC = () => {
   const [selectedLeadIdSingle, setSelectedLeadIdSingle] = useState<
     number | string | null
   >(null);
-
   const navigate = useNavigate();
   const { lead_in, status } = useParams<{ lead_in: string; status: string }>();
   const dispatch = useDispatch<AppDispatch>();
@@ -120,11 +110,9 @@ const TodayLeads: React.FC = () => {
   const { todayLeads, loading, error } = useSelector(
     (state: RootState) => state.lead
   );
-
-  // Deduplicate leads by unique_property_id, prioritizing lead_id or newer created_date
   const deduplicatedLeads = useMemo(() => {
     const seen = new Map<string, PropertyEnquiry>();
-    todayLeads?.forEach((item) => {
+    (Array.isArray(todayLeads) ? todayLeads : []).forEach((item) => {
       const key = item.unique_property_id;
       const existing = seen.get(key);
       const itemCreatedDate = normalizeDate(
@@ -144,17 +132,13 @@ const TodayLeads: React.FC = () => {
         seen.set(key, item);
       }
     });
-    const result = Array.from(seen.values());
-
-    return result;
+    return Array.from(seen.values());
   }, [todayLeads]);
 
   const userId =
     user?.user_id || parseInt(localStorage.getItem("userId") || "96", 10);
   const itemsPerPage = 10;
   const statusId = parseInt(status || "0", 10);
-
-  // Derive state options
   const stateOptions = useMemo(() => {
     const uniqueStates = [
       ...new Set(
@@ -168,8 +152,6 @@ const TodayLeads: React.FC = () => {
       label: state,
     }));
   }, [deduplicatedLeads]);
-
-  // Derive city options
   const cityOptions = useMemo(() => {
     const filteredLeads = selectedState
       ? deduplicatedLeads?.filter(
@@ -186,13 +168,11 @@ const TodayLeads: React.FC = () => {
       label: city,
     }));
   }, [deduplicatedLeads, selectedState]);
-
   const sidebarItem = sidebarSubItems.find(
     (item) =>
       item.lead_in.toLowerCase() === lead_in?.toLowerCase() &&
       item.status === statusId
   );
-
   const userFilterOptions = useMemo(
     () =>
       Object.entries(userTypeMap).map(([value, label]) => ({
@@ -201,7 +181,6 @@ const TodayLeads: React.FC = () => {
       })),
     []
   );
-
   useEffect(() => {
     dispatch(getTodayLeads({ user_id: userId }))
       .unwrap()
@@ -213,16 +192,13 @@ const TodayLeads: React.FC = () => {
       dispatch(clearLeads());
     };
   }, [dispatch, userId, statusUpdated]);
-
   const filteredLeads = useMemo(() => {
     const leads =
       deduplicatedLeads?.filter((item: PropertyEnquiry) => {
         const itemCreatedDate = item.created_at || item.created_date;
         const itemUpdatedDate = item.updated_at || item.updated_date;
-
         const normalizedItemCreatedDate = normalizeDate(itemCreatedDate);
         const normalizedItemUpdatedDate = normalizeDate(itemUpdatedDate);
-
         const matchesSearch = !searchQuery
           ? true
           : (item.fullname || "")
@@ -241,11 +217,9 @@ const TodayLeads: React.FC = () => {
             (item.property_for || "")
               .toLowerCase()
               .includes(searchQuery.toLowerCase());
-
         const matchesUserType = !selectedUserType
           ? true
           : item.userDetails?.id?.toString() === selectedUserType;
-
         const matchesCreatedDate = !createdDate
           ? true
           : normalizedItemCreatedDate
@@ -253,24 +227,20 @@ const TodayLeads: React.FC = () => {
             ? normalizedItemCreatedDate >= createdDate
             : normalizedItemCreatedDate === createdDate
           : false;
-
         const matchesUpdatedDate = !updatedDate
           ? true
           : normalizedItemUpdatedDate && createdDate
           ? normalizedItemUpdatedDate >= createdDate &&
             normalizedItemUpdatedDate <= updatedDate
           : false;
-
         const matchesState = !selectedState
           ? true
           : item.state_id
           ? item.state_id.toLowerCase() === selectedState.toLowerCase()
           : false;
-
         const matchesCity = !selectedCity
           ? true
           : item.city_id.toLowerCase() === selectedCity.toLowerCase();
-
         if (itemCreatedDate && !isValidDate(itemCreatedDate)) {
           console.warn(
             `Invalid created_date/at for lead ${item.lead_id || item.id}:`,
@@ -283,7 +253,6 @@ const TodayLeads: React.FC = () => {
             itemUpdatedDate
           );
         }
-
         const isMatch =
           matchesSearch &&
           matchesUserType &&
@@ -291,10 +260,8 @@ const TodayLeads: React.FC = () => {
           matchesUpdatedDate &&
           matchesState &&
           matchesCity;
-
         return isMatch;
       }) || [];
-
     return leads;
   }, [
     deduplicatedLeads,
@@ -305,25 +272,20 @@ const TodayLeads: React.FC = () => {
     selectedState,
     selectedCity,
   ]);
-
   const totalCount = filteredLeads.length;
   const totalPages = Math.ceil(totalCount / itemsPerPage);
   const currentLeads = filteredLeads.slice(
     (localPage - 1) * itemsPerPage,
     localPage * itemsPerPage
   );
-
   const getPageTitle = () => sidebarItem?.name || "Today Leads";
-
   const handleSearch = (value: string) => {
     setSearchQuery(value.trim());
     setLocalPage(1);
   };
-
   const goToPage = (page: number) => setLocalPage(page);
   const goToPreviousPage = () => localPage > 1 && goToPage(localPage - 1);
   const goToNextPage = () => localPage < totalPages && goToPage(localPage + 1);
-
   const getPaginationItems = () => {
     const pages = [];
     const totalVisiblePages = 7;
@@ -339,32 +301,26 @@ const TodayLeads: React.FC = () => {
     if (endPage < totalPages) pages.push(totalPages);
     return pages;
   };
-
   const handleViewHistory = (item: PropertyEnquiry) => {
     navigate("/leads/view", { state: { property: item } });
   };
-
   const handleLeadAssign = (leadId: number) => {
     navigate(`/leads/assign/${leadId}`);
   };
-
   const handleUpdateModalSubmit = (data: any) => {
     setStatusUpdated(!statusUpdated);
     setIsUpdateModalOpen(false);
     setSelectedLeadId(null);
   };
-
   const handleUserTypeChange = (value: string | null) => {
     setSelectedUserType(value);
     setLocalPage(1);
   };
-
   const handleCreatedDateChange = (date: string | null) => {
     const normalized = normalizeDate(date);
     setCreatedDate(normalized);
     setLocalPage(1);
   };
-
   const handleUpdatedDateChange = (date: string | null) => {
     const normalized = normalizeDate(date);
     if (normalized && createdDate && normalized < createdDate) {
@@ -374,18 +330,15 @@ const TodayLeads: React.FC = () => {
     setUpdatedDate(normalized);
     setLocalPage(1);
   };
-
   const handleStateChange = (value: string | null) => {
     setSelectedState(value);
     setSelectedCity(null);
     setLocalPage(1);
   };
-
   const handleCityChange = (value: string | null) => {
     setSelectedCity(value);
     setLocalPage(1);
   };
-
   const handleClearFilters = () => {
     setSelectedUserType(null);
     setCreatedDate(null);
@@ -395,13 +348,11 @@ const TodayLeads: React.FC = () => {
     setSearchQuery("");
     setLocalPage(1);
   };
-
   const handleCheckboxChange = (identifier: string | number) => {
     setSelectedLeadIdSingle((prev) =>
       prev === identifier ? null : identifier
     );
   };
-
   const handleBulkAssign = async () => {
     if (selectedLeadIdSingle === null) {
       toast.error("Please select an enquiry.");
@@ -452,7 +403,6 @@ const TodayLeads: React.FC = () => {
       }
     }
   };
-
   const handleBulkViewHistory = () => {
     if (selectedLeadIdSingle === null) {
       toast.error("Please select an enquiry.");
@@ -464,7 +414,6 @@ const TodayLeads: React.FC = () => {
     );
     if (lead) handleViewHistory(lead);
   };
-
   return (
     <div className="relative min-h-screen">
       <PageMeta title={`Property Enquiries - ${getPageTitle()}`} />
@@ -732,5 +681,4 @@ const TodayLeads: React.FC = () => {
     </div>
   );
 };
-
 export default TodayLeads;

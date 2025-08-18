@@ -4,39 +4,13 @@ import { useSelector, useDispatch } from "react-redux";
 import Button from "../../components/ui/button/Button";
 import { RootState, AppDispatch } from "../../store/store";
 import {
-  getUserById,
+  getUsersByType,
   clearUsers,
   getEmpProfile,
 } from "../../store/slices/userslice";
 
-const statusText = (status: number) => {
-  switch (status) {
-    case 0:
-      return "Pending";
-    case 1:
-      return "Approved";
-    case 2:
-      return "Rejected";
-    default:
-      return "Inactive";
-  }
-};
-
-const statusClass = (status: number) => {
-  switch (status) {
-    case 0:
-      return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200";
-    case 2:
-      return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200";
-    case 3:
-      return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200";
-    default:
-      return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200";
-  }
-};
-
 const EmployeeDetail = () => {
-  const { id, status } = useParams<{ id: string; status: string }>();
+  const { id } = useParams<{ id: string; status: string }>();
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
   const { user, isAuthenticated } = useSelector(
@@ -73,8 +47,9 @@ const EmployeeDetail = () => {
           size="sm"
           onClick={() =>
             dispatch(
-              getUserById({
+              getUsersByType({
                 user_id: id,
+                user_type: user?.user_type,
               })
             )
           }

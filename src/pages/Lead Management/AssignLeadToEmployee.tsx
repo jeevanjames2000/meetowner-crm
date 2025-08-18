@@ -43,6 +43,7 @@ const AssignLeadEmployeePage: React.FC = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState<string | null>(null);
+
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   const userTypeOptions = [
@@ -70,21 +71,20 @@ const AssignLeadEmployeePage: React.FC = () => {
     })) || [];
 
   useEffect(() => {
-    if (user?.id && formData.assigned_user_type) {
+    if (user?.user_id && formData.assigned_user_type) {
       dispatch(
         getUsersByType({
-          created_user_id: user.id,
+          created_user_id: user.user_id,
           user_type: parseInt(formData.assigned_user_type),
         })
       );
     }
     dispatch(getLeadStatuses());
-  }, [formData.assigned_user_type, user?.id, dispatch]);
+  }, [formData.assigned_user_type, user?.user_id, dispatch]);
 
   const handleInputChange =
     (field: keyof typeof formData) => (value: string) => {
       setFormData((prev) => ({ ...prev, [field]: value }));
-
       if (field === "assigned_id") {
         const selectedUser = users?.find(
           (user: UserType) => user.id.toString() === value
@@ -125,7 +125,7 @@ const AssignLeadEmployeePage: React.FC = () => {
     e.preventDefault();
     if (!validateForm()) return;
 
-    if (!user?.id || !user?.user_type) {
+    if (!user?.user_id || !user?.user_type) {
       setSubmitError("User information is missing. Please log in again.");
       return;
     }
@@ -149,17 +149,20 @@ const AssignLeadEmployeePage: React.FC = () => {
         updated_emp_phone: user?.mobile,
         next_action: formData.next_action,
         lead_added_user_type: user.user_type,
-        lead_added_user_id: user.id,
+        lead_added_user_id: user.user_id,
         status_id: formData.status_id
           ? parseInt(formData.status_id)
           : undefined,
       };
 
-      await dispatch(assignLeadToEmployee(submitData)).unwrap();
+      await dispatch(assignLeadToEmployee(submitData))
+        .unwrap()
+        .then((res) => {
+          navigate(`/${res.data.status_name}`, { replace: true });
+        });
       setSubmitSuccess(
         `Lead assigned successfully! Lead ID: ${submitData.lead_id}`
       );
-      navigate(-1);
     } catch (error: any) {
       setSubmitError(
         error.message || "Failed to assign lead. Please try again."
@@ -176,7 +179,7 @@ const AssignLeadEmployeePage: React.FC = () => {
   return (
     <div className="min-h-screen p-6">
       <PageMeta title="Assign Lead" />
-      <PageBreadcrumb pageTitle="Assign Lead" /> 
+      <PageBreadcrumb pageTitle="Assign Lead" />
       <div className="max-w-lg mx-auto bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg">
         <h2 className="text-xl font-semibold mb-4">Assign Lead</h2>
         {submitSuccess && (
@@ -184,16 +187,7 @@ const AssignLeadEmployeePage: React.FC = () => {
             {submitSuccess}
           </div>
         )}
-        {submitError && (
-          <div className="p-3 mb-4 bg-red-100 text-red-700 rounded-md">
-            {submitError}
-          </div>
-        )}
-        {statusesError && (
-          <div className="p-3 mb-4 bg-red-100 text-red-700 rounded-md">
-            {statusesError}
-          </div>
-        )}
+
         <form onSubmit={handleSubmit} className="space-y-4">
           <Select
             label="Employee Type"

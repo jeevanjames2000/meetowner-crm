@@ -1,5 +1,4 @@
 import { useState, useEffect, KeyboardEvent, useRef } from "react";
-import { EyeCloseIcon, EyeIcon } from "../../icons";
 import { useDispatch, useSelector } from "react-redux";
 import { Navigate, useNavigate } from "react-router";
 import {

@@ -72,16 +72,7 @@ export default function App() {
               />
             </Route>
           </Route>
-          <Route
-            path="/signin"
-            element={
-              isAuthenticated && token && !isTokenExpired(token) ? (
-                <Navigate to="/" replace />
-              ) : (
-                <SignIn />
-              )
-            }
-          />
+          <Route path="/signin" element={<SignIn />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
         <Toaster

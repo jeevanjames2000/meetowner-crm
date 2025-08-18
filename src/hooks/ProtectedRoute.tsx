@@ -1,6 +1,6 @@
 import { useSelector, useDispatch } from "react-redux";
 import { Navigate, Outlet, useLocation, useNavigate } from "react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 import { AppDispatch, RootState } from "../store/store";
 import {
   getUserById,
@@ -9,26 +9,35 @@ import {
 } from "../store/slices/authSlice";
 import { jwtDecode } from "jwt-decode";
 import toast from "react-hot-toast";
+
 interface JwtPayload {
   user_id: number;
 }
+
 const ProtectedRoute: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
-  const { error } = useSelector((state: RootState) => state.auth);
+  const { error, isAuthenticated } = useSelector(
+    (state: RootState) => state.auth
+  );
   const location = useLocation();
   const navigate = useNavigate();
-  const searchParams = new URLSearchParams(location.search);
-  const queryToken = searchParams.get("url");
-  const [isLoading, setIsLoading] = useState(!!queryToken);
+  const queryToken = useMemo(
+    () => new URLSearchParams(location.search).get("url"),
+    [location.search]
+  );
+  const [isLoading, setIsLoading] = useState(false);
   const [isValidUser, setIsValidUser] = useState(false);
-  const [hasProcessedToken, setHasProcessedToken] = useState(false);
+  const hasProcessedTokenRef = useRef(false);
+
   useEffect(() => {
     if (error) {
       toast.error(error);
     }
   }, [error]);
+
   useEffect(() => {
-    if (!queryToken || hasProcessedToken) return;
+    if (!queryToken || hasProcessedTokenRef.current) return;
+    setIsLoading(true);
     const processToken = async () => {
       try {
         if (isTokenExpired(queryToken)) {
@@ -45,28 +54,32 @@ const ProtectedRoute: React.FC = () => {
         if (res?.user?.crm_access === 1) {
           await dispatch(setToken(queryToken));
           setIsValidUser(true);
-          navigate("/");
-        } else {
-          navigate("/signin");
+          if (location.pathname !== "/") {
+            navigate("/", { replace: true });
+          }
+        } else if (location.pathname !== "/signin") {
+          navigate("/signin", { replace: true });
         }
       } catch (err) {
         console.error("Token processing error:", err);
+        if (location.pathname !== "/signin") {
+          navigate("/signin", { replace: true });
+        }
       } finally {
-        setHasProcessedToken(true);
+        hasProcessedTokenRef.current = true;
         setIsLoading(false);
       }
     };
     processToken();
-  }, [queryToken, dispatch, hasProcessedToken, navigate]);
-
-
+  }, [queryToken, dispatch, navigate, location.pathname]);
 
   if (isLoading) {
     return <div>Loading...</div>;
   }
-  if (hasProcessedToken && isValidUser) {
+  if (isAuthenticated || isValidUser) {
     return <Outlet />;
   }
   return <Navigate to="/signin" replace state={{ from: location }} />;
 };
+
 export default ProtectedRoute;

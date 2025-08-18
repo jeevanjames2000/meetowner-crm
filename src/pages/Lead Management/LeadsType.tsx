@@ -121,7 +121,7 @@ const LeadsType: React.FC = () => {
     const result = Array.from(seen.values());
     return result;
   }, [leads]);
-  const isBuilder = user?.user_type === BUILDER_USER_TYPE;
+
   const itemsPerPage = 10;
   const statusId = parseInt(status || "0", 10);
   const stateOptions = useMemo(() => {
@@ -167,10 +167,15 @@ const LeadsType: React.FC = () => {
     []
   );
   const leadsParams = useMemo(() => {
-    if (!isAuthenticated || !user?.id || !user?.user_type || statusId < 0) {
+    if (
+      !isAuthenticated ||
+      !user?.user_id ||
+      !user?.user_type ||
+      statusId < 0
+    ) {
       return null;
     }
-    return { status_id: statusId };
+    return { status_id: statusId, user_id: user?.user_id };
   }, [user, statusId]);
   useEffect(() => {
     if (leadsParams) {
@@ -178,7 +183,6 @@ const LeadsType: React.FC = () => {
         .unwrap()
         .catch((err) => {
           console.error("Error fetching leads:", err);
-          toast.error(err || "Failed to fetch leads");
         });
     }
     return () => {
@@ -305,27 +309,7 @@ const LeadsType: React.FC = () => {
     setIsUpdateModalOpen(false);
     setSelectedLeadId(null);
   };
-  const handleMarkAsBooked = (leadId: number) => {
-    const lead = currentLeads.find((item) => item.lead_id === leadId);
-    if (lead) {
-      navigate(`/leads/book/${leadId}`, {
-        state: {
-          leadId,
-          leadAddedUserId: isBuilder ? user!.id : user!.created_user_id!,
-          leadAddedUserType: isBuilder
-            ? user!.user_type
-            : Number(user!.created_user_type),
-          propertyId: lead.interested_project_id || 2,
-        },
-      });
-    } else {
-      toast.error("Lead not found");
-    }
-  };
-  const handleUpdateLead = (leadId: number) => {
-    setSelectedLeadId(leadId);
-    setIsUpdateModalOpen(true);
-  };
+
   const handleUserTypeChange = (value: string | null) => {
     setSelectedUserType(value);
     setLocalPage(1);

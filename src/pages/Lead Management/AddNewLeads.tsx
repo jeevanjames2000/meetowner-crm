@@ -161,7 +161,7 @@ const LeadForm: React.FC = () => {
     return Object.keys(newErrors).length === 0;
   };
   const userId =
-    user?.id || parseInt(localStorage.getItem("userId") || "96", 10);
+    user?.user_id || parseInt(localStorage.getItem("userId") || "96", 10);
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -182,8 +182,8 @@ const LeadForm: React.FC = () => {
         google_address: formData.interestedProject?.google_address,
         property_name: formData.interestedProject?.property_name,
         lead_source_id: Number(formData.leadSource),
-        lead_added_user_type: 1,
-        lead_added_user_id: 4,
+        lead_added_user_type: user?.user_type || 1,
+        lead_added_user_id: userId,
       };
       dispatch(insertLead(leadData)).unwrap();
       dispatch(getPropertyEnquiries({ user_id: userId })).unwrap();

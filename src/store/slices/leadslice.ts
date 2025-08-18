@@ -179,12 +179,13 @@ export const getLeadsByUser = createAsyncThunk<
 >(
   "lead/getLeadsByUser",
   async (
-    {  status_id },
+    {  status_id,user_id },
     { rejectWithValue }
   ) => {
     try {
       const queryParams = new URLSearchParams({
-        status: status_id.toString() 
+        status: status_id.toString() ,
+        user_id: user_id
       });
       const response = await ngrokAxiosInstance.get<LeadsResponse>(
         `/meetCRM/v2/leads/getLeadsByStatus?${queryParams}`,
@@ -629,10 +630,7 @@ export const assignLeadToEmployee = createAsyncThunk<
   "lead/assignLeadToEmployee",
   async (assignData, { rejectWithValue }) => {
     try {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        return rejectWithValue("No authentication token found. Please log in.");
-      }
+      
       const payload = {
         ...assignData,
         status_id: assignData.status_id !== undefined ? assignData.status_id : 1,
@@ -640,19 +638,14 @@ export const assignLeadToEmployee = createAsyncThunk<
       const response = await ngrokAxiosInstance.post<AssignLeadResponse>(
         `/meetCRM/v2/leads/assignLeads`,
         payload,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
+       
       );
-      if (response.data.status !== "success") {
+      if (response.status !== 200) {
         return rejectWithValue(response.data.message || "Failed to assign lead");
       }
       return response.data;
     } catch (error) {
       const axiosError = error as AxiosError<ErrorResponse>;
-      console.error("Assign lead error:", axiosError);
       if (axiosError.response) {
         const status = axiosError.response.status;
         switch (status) {
