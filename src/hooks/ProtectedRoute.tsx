@@ -66,13 +66,6 @@ const ProtectedRoute: React.FC = () => {
     processToken();
   }, [queryToken, dispatch, hasProcessedToken, navigate]);
 
-  if (!queryToken && isAuthenticated) {
-    return <Outlet />;
-  }
-
-  if (!queryToken) {
-    return <Navigate to="/signin" replace state={{ from: location }} />;
-  }
 
 
   if (isLoading) {

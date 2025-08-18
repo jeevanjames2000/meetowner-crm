@@ -157,7 +157,7 @@ export const loginUser = createAsyncThunk(
         error: "Login failed",
       });
       const response = await promise;
-
+      console.log(response.data.user_details, "responseuser_details")
       await dispatch(sendUnifiedOtp({ mobile: credentials.mobile })).unwrap();
       return response.data.user_details
     } catch (error) {
