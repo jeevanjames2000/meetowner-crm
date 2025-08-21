@@ -28,7 +28,6 @@ const ViewLeadDetails = () => {
     (state: RootState) => state.lead
   );
   const property = location.state?.property as Lead;
-
   const leadSources = useSelector((state: RootState) => state.lead.leadSources);
 
   useEffect(() => {
@@ -101,17 +100,24 @@ const ViewLeadDetails = () => {
         <div className="space-y-6">
           <div className="space-y-2 text-[16px] text-gray-800 dark:text-gray-100 leading-relaxed">
             <p>
-              <strong>Name:</strong> {property.fullname || property.userDetails?.name || "Not Available" }
+              <strong>Name:</strong>{" "}
+              {property.fullname ||
+                property.userDetails?.name ||
+                "Not Available"}
             </p>
             <p>
-              <strong>Mobile:</strong> {property.mobile || property.userDetails?.mobile || "Not Available" }
+              <strong>Mobile:</strong>{" "}
+              {property.mobile ||
+                property.userDetails?.mobile ||
+                "Not Available"}
             </p>
             <p>
-              <strong>Email:</strong> {property.email || property.userDetails?.email || 
-              "Not Available" }
+              <strong>Email:</strong>{" "}
+              {property.email || property.userDetails?.email || "Not Available"}
             </p>
             <p>
-              <strong>Project:</strong> {property.property_name || "Not Available"}
+              <strong>Project:</strong>{" "}
+              {property.property_name || "Not Available"}
             </p>
             <p>
               <strong>Budget:</strong> {property.budget || "N/A"}
@@ -126,9 +132,12 @@ const ViewLeadDetails = () => {
             </p>
 
             <p>
-              <strong>Created:</strong> {property.created_at }{" "}
-              {property.created_at}
+              <strong>Created:</strong>{" "}
+              {new Date(
+                property.created_at || property?.created_date
+              ).toLocaleDateString()}
             </p>
+
             <p>
               <strong>Assigned:</strong> {property.assigned_name} (
               {property.assigned_emp_number || "Not Yet"} )
@@ -140,10 +149,10 @@ const ViewLeadDetails = () => {
             </p>
 
             <p>
-              <strong>city:</strong> {property.city_id}
+              <strong>city:</strong> {property.city_id || "N/A"}
             </p>
             <p>
-              <strong>state:</strong> {property.state_id}
+              <strong>state:</strong> {property.state_id || "N/A"}
             </p>
           </div>
         </div>

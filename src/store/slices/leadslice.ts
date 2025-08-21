@@ -216,18 +216,13 @@ export const getLeadsByUser = createAsyncThunk<
 export const getLeadsByID = createAsyncThunk<
   Lead[],
   {
-    lead_added_user_type: number;
-    lead_added_user_id: number;
-    lead_source_user_id:number;
-    assigned_user_type?: number;
-    assigned_id?: number;
-    status_id?: number; 
+    user_id: number;
   },
   { rejectValue: string }
 >(
   "lead/getLeadsByID",
   async (
-    { lead_added_user_type, lead_added_user_id, assigned_user_type, assigned_id, status_id },
+    {user_id },
     { rejectWithValue }
   ) => {
     try {
@@ -235,26 +230,14 @@ export const getLeadsByID = createAsyncThunk<
       if (!token) {
         return rejectWithValue("No authentication token found. Please log in.");
       }
-      const queryParams = new URLSearchParams({
-        lead_added_user_type: lead_added_user_type.toString(),
-        lead_added_user_id: lead_added_user_id.toString(),
-        lead_source_user_id: assigned_id.toString(),
-        assigned_id: assigned_id.toString(),
-        ...(assigned_user_type && { assigned_user_type: assigned_user_type.toString() }),
-        ...(status_id !== undefined && { status_id: status_id.toString() }), 
-      });
+      
       const response = await ngrokAxiosInstance.get<LeadsResponse>(
-        `/api/v1/leads/getLeadsChannelPartner?${queryParams}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
+        `/meetCRM/v2/leads/getAssignedLeads?user_id=${user_id}`,
       );
-      if (!response.data.results || response.data.results.length === 0) {
+      if (!response.data || response.data.length === 0) {
         return rejectWithValue("No leads found");
       }
-      return response.data.results;
+      return response.data;
     } catch (error) {
       const axiosError = error as AxiosError<ErrorResponse>;
       console.error("Get leads by user error:", axiosError);

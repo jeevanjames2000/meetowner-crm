@@ -20,12 +20,14 @@ import {
 } from "../../store/slices/leadslice";
 import FilterBar from "../../components/common/FilterBar";
 import PageBreadcrumbList from "../../components/common/PageBreadCrumbLists";
+
 const userTypeOptions = [
   { value: "4", label: "Sales Manager" },
   { value: "5", label: "Telecallers" },
   { value: "6", label: "Marketing Executors" },
   { value: "7", label: "Receptionists" },
 ];
+
 const statusOptions = [
   { value: "", label: "All" },
   { value: "0", label: "Today Leads" },
@@ -38,6 +40,17 @@ const statusOptions = [
   { value: "7", label: "Lost" },
   { value: "8", label: "Revoked" },
 ];
+
+const statusMap: Record<number, string> = {
+  1: "Open",
+  2: "Follow Up",
+  3: "In Progress",
+  4: "Site Visit Scheduled",
+  5: "Site Visit Done",
+  6: "Won",
+  7: "Lost",
+};
+
 const AllCpLeadDetails: React.FC = () => {
   const [localPage, setLocalPage] = useState<number>(1);
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -51,6 +64,8 @@ const AllCpLeadDetails: React.FC = () => {
   const [selectedLeadIdSingle, setSelectedLeadIdSingle] = useState<
     number | null
   >(null);
+  const [resetKey, setResetKey] = useState<number>(0);
+
   const navigate = useNavigate();
   const location = useLocation();
   const dispatch = useDispatch<AppDispatch>();
@@ -60,6 +75,7 @@ const AllCpLeadDetails: React.FC = () => {
   const { cpLeads, loading, error } = useSelector(
     (state: RootState) => state.lead
   );
+
   const {
     admin_user_id,
     admin_user_type,
@@ -68,16 +84,12 @@ const AllCpLeadDetails: React.FC = () => {
     assigned_id,
     name,
   } = location.state || {};
+
   const itemsPerPage = 10;
+
   useEffect(() => {
-    if (isAuthenticated && user?.id) {
-      const params = {
-        lead_added_user_type: admin_user_type || user.user_type,
-        lead_added_user_id: admin_user_id || user.id,
-        lead_source_user_id: lead_source_user_id || user.id,
-        assigned_user_type: assigned_user_type,
-        assigned_id,
-      };
+    if (isAuthenticated && assigned_id) {
+      const params = { user_id: assigned_id };
       dispatch(getLeadsByID(params))
         .unwrap()
         .catch((err) => {
@@ -87,39 +99,52 @@ const AllCpLeadDetails: React.FC = () => {
     return () => {
       dispatch(clearLeads());
     };
-  }, [isAuthenticated, user, admin_user_id, admin_user_type, dispatch]);
+  }, [isAuthenticated, user, dispatch]);
+
+  // Normalize date to YYYY-MM-DD for comparison
+  const normalizeDate = (date: string | null) => {
+    if (!date) return null;
+    const d = new Date(date);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(
+      2,
+      "0"
+    )}-${String(d.getDate()).padStart(2, "0")}`;
+  };
+
   const filteredLeads =
     cpLeads?.filter((item) => {
       const matchesSearch = !searchQuery
         ? true
-        : item.customer_name
-            .toLowerCase()
-            .includes(searchQuery.toLowerCase()) ||
-          item.customer_phone_number.includes(searchQuery) ||
-          item.customer_email
-            .toLowerCase()
-            .includes(searchQuery.toLowerCase()) ||
-          item.interested_project_name
-            .toLowerCase()
+        : item.fullname?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          item.mobile?.includes(searchQuery) ||
+          item.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          item.property_name
+            ?.toLowerCase()
             .includes(searchQuery.toLowerCase()) ||
           item.assigned_name
-            .toLowerCase()
+            ?.toLowerCase()
             .includes(searchQuery.toLowerCase()) ||
-          item.assigned_emp_number.includes(searchQuery);
+          item.assigned_emp_number?.includes(searchQuery);
+
       const matchesStatus = !selectedStatus
         ? true
         : item.status_id.toString() === selectedStatus;
-      const itemCreatedDate = item.created_date?.split("T")[0] || "";
+
+      const itemCreatedDate = normalizeDate(item.created_at);
       const matchesCreatedDate =
         (!startCreatedDate || itemCreatedDate >= startCreatedDate) &&
         (!endCreatedDate || itemCreatedDate <= endCreatedDate);
-      const itemUpdatedDate = item.updated_date?.split("T")[0] || "";
+
+      const itemUpdatedDate = normalizeDate(item.updated_at);
+      // Stricter updated date filter: only include leads updated on or after startUpdatedDate
       const matchesUpdatedDate =
-        (!startUpdatedDate || itemUpdatedDate >= startUpdatedDate) &&
-        (!endUpdatedDate || itemUpdatedDate <= endUpdatedDate);
-      const matchesCity = !selectedCity
-        ? true
-        : item.city?.toString() === selectedCity;
+        !startUpdatedDate || itemUpdatedDate >= startUpdatedDate;
+
+      const matchesCity =
+        !selectedCity || selectedCity === "null"
+          ? true
+          : item.city_id?.toString() === selectedCity;
+
       return (
         matchesSearch &&
         matchesStatus &&
@@ -128,45 +153,76 @@ const AllCpLeadDetails: React.FC = () => {
         matchesCity
       );
     }) || [];
+
   const totalCount = filteredLeads.length;
   const totalPages = Math.ceil(totalCount / itemsPerPage);
   const currentLeads = filteredLeads.slice(
     (localPage - 1) * itemsPerPage,
     localPage * itemsPerPage
   );
+
   const getUserType =
     userTypeOptions.find(
       (option) => option.value === assigned_user_type?.toString()
     )?.label || "Unknown";
+
   const handleSearch = (value: string) => {
     setSearchQuery(value.trim());
     setLocalPage(1);
   };
+
   const handleStatusChange = (value: string | null) => {
     setSelectedStatus(value || "");
     setLocalPage(1);
   };
+
   const handleStartCreatedDateChange = (date: string | null) => {
+    if (date && endCreatedDate && date > endCreatedDate) {
+      toast.error("Start created date cannot be after end created date");
+      return;
+    }
     setStartCreatedDate(date);
     setLocalPage(1);
   };
+
   const handleEndCreatedDateChange = (date: string | null) => {
+    if (date && startCreatedDate && date < startCreatedDate) {
+      toast.error("End created date cannot be before start created date");
+      return;
+    }
     setEndCreatedDate(date);
     setLocalPage(1);
   };
+
   const handleStartUpdatedDateChange = (date: string | null) => {
+    if (date && endUpdatedDate && date > endUpdatedDate) {
+      toast.error("Start updated date cannot be after end updated date");
+      return;
+    }
     setStartUpdatedDate(date);
     setLocalPage(1);
   };
+
+  const handleEndUpdatedDateChange = (date: string | null) => {
+    if (date && startUpdatedDate && date < startUpdatedDate) {
+      toast.error("End updated date cannot be before start updated date");
+      return;
+    }
+    setEndUpdatedDate(date);
+    setLocalPage(1);
+  };
+
   const handleStateChange = (value: string | null) => {
     setSelectedState(value);
     setSelectedCity(null);
     setLocalPage(1);
   };
+
   const handleCityChange = (value: string | null) => {
     setSelectedCity(value);
     setLocalPage(1);
   };
+
   const handleClearFilters = () => {
     setSearchQuery("");
     setSelectedStatus("");
@@ -177,10 +233,13 @@ const AllCpLeadDetails: React.FC = () => {
     setSelectedState(null);
     setSelectedCity(null);
     setLocalPage(1);
+    setResetKey((prev) => prev + 1);
   };
+
   const goToPage = (page: number) => setLocalPage(page);
   const goToPreviousPage = () => localPage > 1 && goToPage(localPage - 1);
   const goToNextPage = () => localPage < totalPages && goToPage(localPage + 1);
+
   const getPaginationItems = () => {
     const pages = [];
     const totalVisiblePages = 7;
@@ -196,12 +255,15 @@ const AllCpLeadDetails: React.FC = () => {
     if (endPage < totalPages) pages.push(totalPages);
     return pages;
   };
+
   const handleViewHistory = (item: Lead) => {
     navigate("/leads/view", { state: { property: item } });
   };
+
   const handleLeadAssign = (leadId: number) => {
     navigate(`/leads/assign/${leadId}`);
   };
+
   const handleMarkAsBooked = (leadId: number) => {
     const lead = currentLeads.find((item) => item.lead_id === leadId);
     if (lead) {
@@ -217,9 +279,11 @@ const AllCpLeadDetails: React.FC = () => {
       toast.error("Lead not found");
     }
   };
+
   const handleCheckboxChange = (leadId: number) => {
     setSelectedLeadIdSingle((prev) => (prev === leadId ? null : leadId));
   };
+
   const handleBulkAssign = () => {
     if (selectedLeadIdSingle === null) {
       toast.error("Please select a lead.");
@@ -227,6 +291,7 @@ const AllCpLeadDetails: React.FC = () => {
     }
     handleLeadAssign(selectedLeadIdSingle);
   };
+
   const handleBulkViewHistory = () => {
     if (selectedLeadIdSingle === null) {
       toast.error("Please select a lead.");
@@ -237,6 +302,7 @@ const AllCpLeadDetails: React.FC = () => {
     );
     if (lead) handleViewHistory(lead);
   };
+
   const handleBulkBookingDone = () => {
     if (selectedLeadIdSingle === null) {
       toast.error("Please select a lead.");
@@ -244,6 +310,7 @@ const AllCpLeadDetails: React.FC = () => {
     }
     handleMarkAsBooked(selectedLeadIdSingle);
   };
+
   return (
     <div className="relative min-h-screen">
       <PageMeta title="Lead Management - All Leads" />
@@ -259,16 +326,19 @@ const AllCpLeadDetails: React.FC = () => {
         onCreatedDateChange={handleStartCreatedDateChange}
         onCreatedEndDateChange={handleEndCreatedDateChange}
         onUpdatedDateChange={handleStartUpdatedDateChange}
+        onUpdatedEndDateChange={handleEndUpdatedDateChange}
         onStateChange={handleStateChange}
         onCityChange={handleCityChange}
         onClearFilters={handleClearFilters}
         createdDate={startCreatedDate}
         createdEndDate={endCreatedDate}
         updatedDate={startUpdatedDate}
+        updatedEndDate={endUpdatedDate}
         selectedStatus={selectedStatus}
         selectedState={selectedState}
         selectedCity={selectedCity}
         className="mb-4"
+        resetKey={resetKey}
       />
       <div className="mb-4 flex gap-2">
         <PageBreadcrumbList
@@ -291,14 +361,6 @@ const AllCpLeadDetails: React.FC = () => {
           className="px-4 py-1 h-10"
         >
           View History
-        </Button>
-        <Button
-          variant="primary"
-          onClick={handleBulkBookingDone}
-          disabled={selectedLeadIdSingle === null}
-          className="px-4 py-1 h-10"
-        >
-          Booking Done
         </Button>
       </div>
       <div className="space-y-6">
@@ -359,12 +421,6 @@ const AllCpLeadDetails: React.FC = () => {
                       isHeader
                       className="text-left font-medium text-xs whitespace-nowrap"
                     >
-                      Updated
-                    </TableCell>
-                    <TableCell
-                      isHeader
-                      className="text-left font-medium text-xs whitespace-nowrap"
-                    >
                       City
                     </TableCell>
                   </TableRow>
@@ -384,25 +440,22 @@ const AllCpLeadDetails: React.FC = () => {
                         />
                       </TableCell>
                       <TableCell className="text-left truncate max-w-[120px]">
-                        {item.customer_name || "N/A"}
+                        {item.fullname || "N/A"}
                       </TableCell>
                       <TableCell className="text-left">
-                        {item.customer_phone_number || "N/A"}
+                        {item.mobile || "N/A"}
                       </TableCell>
                       <TableCell className="text-left truncate max-w-[120px]">
-                        {item.interested_project_name || "N/A"}
+                        {item.property_name || "N/A"}
                       </TableCell>
                       <TableCell className="text-left">
-                        {item.status_name || "N/A"}
+                        {statusMap[item.status_id] || "N/A"}
                       </TableCell>
                       <TableCell className="text-left">
-                        {item.created_date?.split("T")[0] || "N/A"}
+                        {normalizeDate(item.created_at) || "N/A"}
                       </TableCell>
                       <TableCell className="text-left">
-                        {item.updated_date?.split("T")[0] || "N/A"}
-                      </TableCell>
-                      <TableCell className="text-left">
-                        {item.city || "N/A"}
+                        {item.city_id || "N/A"}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -453,4 +506,5 @@ const AllCpLeadDetails: React.FC = () => {
     </div>
   );
 };
+
 export default AllCpLeadDetails;

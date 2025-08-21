@@ -616,14 +616,10 @@ const TodayLeads: React.FC = () => {
                         {item.state_id || "N/A"}
                       </TableCell>
                       <TableCell className="text-center">
-                        {formatToIndianCurrency(
-                          item.property_cost || item.budget
-                        ) || "N/A"}
+                        {formatToIndianCurrency(item.property_cost) || "N/A"}
                       </TableCell>
                       <TableCell className="text-center">
-                        {formatToIndianCurrency(
-                          item.budget || item.property_cost
-                        ) || "N/A"}
+                        {formatToIndianCurrency(item.budget) || "N/A"}
                       </TableCell>
                     </TableRow>
                   ))}
