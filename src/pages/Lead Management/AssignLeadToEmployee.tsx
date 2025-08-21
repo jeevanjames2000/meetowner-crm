@@ -14,7 +14,7 @@ import { LeadStatus } from "../../types/LeadModel";
 import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import { getUsersByType } from "../../store/slices/userslice";
-
+import { toast, Toaster } from "react-hot-toast";
 const AssignLeadEmployeePage: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
@@ -160,11 +160,11 @@ const AssignLeadEmployeePage: React.FC = () => {
         .then((res) => {
           navigate(`/${res.data.status_name}`, { replace: true });
         });
-      setSubmitSuccess(
+      toast.success(
         `Lead assigned successfully! Lead ID: ${submitData.lead_id}`
       );
     } catch (error: any) {
-      setSubmitError(
+      toast.error(
         error.message || "Failed to assign lead. Please try again."
       );
     } finally {
@@ -178,6 +178,7 @@ const AssignLeadEmployeePage: React.FC = () => {
 
   return (
     <div className="min-h-screen p-6">
+      <Toaster />
       <PageMeta title="Assign Lead" />
       <PageBreadcrumb pageTitle="Assign Lead" />
       <div className="max-w-lg mx-auto bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg">

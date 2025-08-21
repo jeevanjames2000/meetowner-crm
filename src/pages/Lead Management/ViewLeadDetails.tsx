@@ -24,7 +24,7 @@ const ViewLeadDetails = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
 
-  const { leadUpdates, loading, error } = useSelector(
+  const { leadUpdates, loading } = useSelector(
     (state: RootState) => state.lead
   );
   const property = location.state?.property as Lead;
@@ -96,22 +96,22 @@ const ViewLeadDetails = () => {
           Loading lead updates...
         </div>
       )}
-      {error && <div className="text-center text-red-500 py-4">{error}</div>}
 
       <div className="bg-white dark:bg-dark-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 p-6 grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div className="space-y-6">
           <div className="space-y-2 text-[16px] text-gray-800 dark:text-gray-100 leading-relaxed">
             <p>
-              <strong>Name:</strong> {property.fullname}
+              <strong>Name:</strong> {property.fullname || property.userDetails?.name || "Not Available" }
             </p>
             <p>
-              <strong>Mobile:</strong> {property.mobile}
+              <strong>Mobile:</strong> {property.mobile || property.userDetails?.mobile || "Not Available" }
             </p>
             <p>
-              <strong>Email:</strong> {property.email || "N/A"}
+              <strong>Email:</strong> {property.email || property.userDetails?.email || 
+              "Not Available" }
             </p>
             <p>
-              <strong>Project:</strong> {property.property_name}
+              <strong>Project:</strong> {property.property_name || "Not Available"}
             </p>
             <p>
               <strong>Budget:</strong> {property.budget || "N/A"}
@@ -126,17 +126,17 @@ const ViewLeadDetails = () => {
             </p>
 
             <p>
-              <strong>Created:</strong> {property.created_at}{" "}
+              <strong>Created:</strong> {property.created_at }{" "}
               {property.created_at}
             </p>
             <p>
               <strong>Assigned:</strong> {property.assigned_name} (
-              {property.assigned_emp_number})
+              {property.assigned_emp_number || "Not Yet"} )
             </p>
             <p>
               <strong>Status:</strong>{" "}
               {statuses.find((s) => s.status_id === property.status_id)
-                ?.status_name || "Unknown"}
+                ?.status_name || "Not Yet"}
             </p>
 
             <p>

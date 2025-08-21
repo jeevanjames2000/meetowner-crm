@@ -292,6 +292,7 @@ const OpenLeads: React.FC = () => {
     return pages;
   };
   const handleViewHistory = (item: PropertyEnquiry) => {
+    console.log("handleViewHistory", item);
     navigate("/leads/view", { state: { property: item } });
   };
   const handleUpdateModalSubmit = (data: any) => {

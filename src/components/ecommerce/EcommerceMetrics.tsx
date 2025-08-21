@@ -108,8 +108,13 @@ export default function Home() {
         {filteredCounts.map((item, index) => {
           const IconComponent = iconMap[item.user_type] || UserRound;
           const route = userTypeRoutes[item.user_type] || "#";
+
+
+
+           const CardWrapper = item.user_type === "total_leads" ? "div" : Link;
           return (
-            <Link
+            <CardWrapper
+
               key={item.user_type}
               to={route}
               className="group cursor-pointer transition-all duration-300 hover:-translate-y-2"
@@ -141,7 +146,7 @@ export default function Home() {
                   </div>
                 </div>
               </div>
-            </Link>
+            </CardWrapper>
           );
         })}
       </div>

@@ -13,6 +13,7 @@ import { useSidebar } from "../context/SidebarContext";
 import { useSelector } from "react-redux";
 import { RootState } from "../store/store";
 import { filterNavItemsByUserType, NavItem } from "../hooks/NavFilter";
+import favicon from "../../public/favicon.jpeg";
 const navItems: NavItem[] = [
   {
     icon: <GridIcon />,
@@ -34,7 +35,7 @@ const navItems: NavItem[] = [
         data: { lead_in: "Open", status: 1 },
       },
       {
-        name: "Today Folow Ups",
+        name: "Today Follow Ups",
         path: "/leads/today/2",
         data: { lead_in: "Today", status: 2 },
       },
@@ -196,8 +197,8 @@ const AppSidebar: React.FC = () => {
   const handleNestedSubmenuToggle = (index: number, subIndex: number) => {
     setOpenNestedSubmenu((prev) =>
       prev?.type === "main" &&
-      prev.index === index &&
-      prev.subIndex === subIndex
+        prev.index === index &&
+        prev.subIndex === subIndex
         ? null
         : { type: "main", index, subIndex }
     );
@@ -209,9 +210,9 @@ const AppSidebar: React.FC = () => {
   ) => {
     setOpenDeepNestedSubmenu((prev) =>
       prev?.type === "main" &&
-      prev.index === index &&
-      prev.subIndex === subIndex &&
-      prev.nestedIndex === nestedIndex
+        prev.index === index &&
+        prev.subIndex === subIndex &&
+        prev.nestedIndex === nestedIndex
         ? null
         : { type: "main", index, subIndex, nestedIndex }
     );
@@ -231,16 +232,14 @@ const AppSidebar: React.FC = () => {
             {nav.subItems ? (
               <button
                 onClick={() => handleSubmenuToggle(index)}
-                className={`flex items-center w-full px-3 py-2.5 rounded-xl font-medium text-sm transition-all duration-200 group ${
-                  isSubmenuOpen || hasActiveChild
-                    ? "bg-blue-50 text-blue-700 shadow-sm"
-                    : "text-gray-600 hover:bg-blue-50 hover:text-blue-700"
-                } ${!shouldShowText ? "lg:justify-center lg:px-2" : ""}`}
+                className={`flex items-center w-full px-3 py-2.5 rounded-xl font-medium text-sm transition-all duration-200 group ${isSubmenuOpen || hasActiveChild
+                  ? "bg-blue-50 text-blue-700 shadow-sm"
+                  : "text-gray-600 hover:bg-blue-50 hover:text-blue-700"
+                  } ${!shouldShowText ? "lg:justify-center lg:px-2" : ""}`}
               >
                 <div
-                  className={`flex items-center justify-center ${
-                    shouldShowText ? "mr-3" : ""
-                  }`}
+                  className={`flex items-center justify-center ${shouldShowText ? "mr-3" : ""
+                    }`}
                 >
                   {nav.icon}
                 </div>
@@ -250,9 +249,8 @@ const AppSidebar: React.FC = () => {
                       {nav.name}
                     </span>
                     <ChevronDown
-                      className={`w-4 h-4 transition-transform duration-200 flex-shrink-0 ${
-                        isSubmenuOpen ? "rotate-180" : ""
-                      }`}
+                      className={`w-4 h-4 transition-transform duration-200 flex-shrink-0 ${isSubmenuOpen ? "rotate-180" : ""
+                        }`}
                     />
                   </>
                 )}
@@ -261,16 +259,14 @@ const AppSidebar: React.FC = () => {
               nav.path && (
                 <Link
                   to={nav.path}
-                  className={`flex items-center w-full px-3 py-2.5 rounded-xl font-medium text-sm transition-all duration-200 ${
-                    isItemActive
-                      ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/25"
-                      : "text-gray-600 hover:bg-blue-50 hover:text-blue-700"
-                  } ${!shouldShowText ? "lg:justify-center lg:px-2" : ""}`}
+                  className={`flex items-center w-full px-3 py-2.5 rounded-xl font-medium text-sm transition-all duration-200 ${isItemActive
+                    ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/25"
+                    : "text-gray-600 hover:bg-blue-50 hover:text-blue-700"
+                    } ${!shouldShowText ? "lg:justify-center lg:px-2" : ""}`}
                 >
                   <div
-                    className={`flex items-center justify-center ${
-                      shouldShowText ? "mr-3" : ""
-                    }`}
+                    className={`flex items-center justify-center ${shouldShowText ? "mr-3" : ""
+                      }`}
                   >
                     {nav.icon}
                   </div>
@@ -306,25 +302,23 @@ const AppSidebar: React.FC = () => {
                               onClick={() =>
                                 handleNestedSubmenuToggle(index, subIndex)
                               }
-                              className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
-                                openNestedSubmenu?.type === "main" &&
+                              className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-all duration-200 ${openNestedSubmenu?.type === "main" &&
                                 openNestedSubmenu?.index === index &&
                                 openNestedSubmenu?.subIndex === subIndex
-                                  ? "bg-gray-50 text-blue-600"
-                                  : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-                              }`}
+                                ? "bg-gray-50 text-blue-600"
+                                : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                                }`}
                             >
                               <span className="font-medium">
                                 {subItem.name}
                               </span>
                               <ChevronRight
-                                className={`w-4 h-4 transition-transform duration-200 ${
-                                  openNestedSubmenu?.type === "main" &&
+                                className={`w-4 h-4 transition-transform duration-200 ${openNestedSubmenu?.type === "main" &&
                                   openNestedSubmenu?.index === index &&
                                   openNestedSubmenu?.subIndex === subIndex
-                                    ? "rotate-90"
-                                    : ""
-                                }`}
+                                  ? "rotate-90"
+                                  : ""
+                                  }`}
                               />
                             </button>
                           </div>
@@ -332,11 +326,10 @@ const AppSidebar: React.FC = () => {
                           subItem.path && (
                             <Link
                               to={subItem.path}
-                              className={`flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-all duration-200 group ${
-                                isSubItemActive
-                                  ? "bg-blue-50 text-blue-700 font-medium"
-                                  : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-                              }`}
+                              className={`flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-all duration-200 group ${isSubItemActive
+                                ? "bg-blue-50 text-blue-700 font-medium"
+                                : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                                }`}
                             >
                               <span className="font-medium">
                                 {subItem.name}
@@ -374,44 +367,32 @@ const AppSidebar: React.FC = () => {
   );
   return (
     <aside
-      className={`fixed top-0 left-0 h-screen bg-white border-r border-gray-200 transition-all duration-300 ease-in-out z-50 flex flex-col shadow-lg ${
-        isExpanded || isMobileOpen ? "w-72" : isHovered ? "w-72" : "w-16"
-      } ${
-        isMobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
-      }`}
+      className={`fixed top-0 left-0 h-screen bg-white border-r border-gray-200 transition-all duration-300 ease-in-out z-50 flex flex-col shadow-lg ${isExpanded || isMobileOpen ? "w-72" : isHovered ? "w-72" : "w-16"
+        } ${isMobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
+        }`}
       onMouseEnter={() => !isExpanded && setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
       <div
-        className={`px-6 py-6 border-b border-gray-100 ${
-          !shouldShowText ? "lg:px-4" : ""
-        }`}
+        className={`px-6 py-6 border-b border-gray-100 ${!shouldShowText ? "lg:px-4" : ""
+          }`}
       >
         <Link to="/" className="flex items-center">
           {shouldShowText ? (
             <div className="flex items-center">
               <div className="w-8 h-8 rounded-lg flex items-center justify-center mr-3 overflow-hidden">
-                {user?.company_logo ? (
-                  <img
-                    src={user.company_logo}
-                    alt={`${user.company_name} logo`}
-                    className="w-full h-full object-contain"
-                    onError={(e) => {
-                      e.currentTarget.src = "https://via.placeholder.com/32";
-                    }}
-                  />
-                ) : (
-                  <div className="w-full h-full bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center">
-                    <span className="text-white text-sm font-bold">
-                      {user?.company_name?.charAt(0) || "C"}
-                    </span>
-                  </div>
-                )}
+
+
+                <img
+                  src={favicon}
+                  alt={` logo`}
+                  className="w-full h-full object-contain"
+                  onError={(e) => {
+                    e.currentTarget.src = "https://via.placeholder.com/32";
+                  }}
+                />
               </div>
               <div className="flex flex-col">
-                <span className="text-xl font-bold text-gray-900">
-                  {user?.company_name}{" "}
-                </span>
                 <span className="text-xs text-gray-500">Meetowner CRM</span>
               </div>
             </div>
@@ -422,7 +403,7 @@ const AppSidebar: React.FC = () => {
           )}
         </Link>
       </div>
-      {}
+      { }
       <div className="flex-1 overflow-y-auto px-4 py-6">
         <nav>
           {shouldShowText && (

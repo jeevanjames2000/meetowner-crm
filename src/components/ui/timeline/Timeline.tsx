@@ -15,7 +15,7 @@ export interface TimelineEvent {
   description?: string;
   nextAction?: string;
   current?: boolean;
-  updatedEmpType?: string | number;
+  updatedEmpType?: string | number
   updatedEmpId?: string;
   updatedEmpPhone?: string;
   updatedEmpName?: string;
@@ -38,6 +38,53 @@ const Timeline: React.FC<{ data?: TimelineEvent[] }> = ({ data = [] }) => {
     return designation || "Unknown Designation";
   };
 
+ const formatTimestampToIST = (timestamp: string): string => {
+  try {
+    let utcDate: Date;
+
+    // Case 1: If backend sends "ISO ExtraTime"
+    if (timestamp.includes(" ")) {
+      const [isoPart, extraTime] = timestamp.split(" ");
+      if (extraTime) {
+        // Merge into a single ISO string
+        const baseDate = new Date(isoPart);
+        if (isNaN(baseDate.getTime())) return "Invalid Date";
+
+        const [h, m, s] = extraTime.split(":").map(Number);
+        baseDate.setUTCHours(h);
+        baseDate.setUTCMinutes(m);
+        baseDate.setUTCSeconds(s);
+
+        utcDate = baseDate;
+      } else {
+        utcDate = new Date(isoPart);
+      }
+    } else {
+      // Case 2: Proper ISO timestamp
+      utcDate = new Date(timestamp);
+    }
+
+    if (isNaN(utcDate.getTime())) {
+      console.error("Invalid Date detected for timestamp:", timestamp);
+      return "Invalid Date";
+    }
+
+    // Convert to IST
+    return utcDate.toLocaleString("en-IN", {
+      timeZone: "Asia/Kolkata",
+      year: "numeric",
+      month: "short",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: true,
+    });
+  } catch (error) {
+    console.error("Error parsing timestamp:", timestamp, error);
+    return "Invalid Date";
+  }
+};
   return (
     <ol className="relative border-l border-blue-600 dark:border-blue-600">
       {data.map((event, index) => (
@@ -57,8 +104,8 @@ const Timeline: React.FC<{ data?: TimelineEvent[] }> = ({ data = [] }) => {
               </span>
             )}
           </h3>
-          <time className="block mb-2 text-xs text-gray-400 dark:text-gray-500">
-            {event.timestamp}
+           <time className="block mb-2 text-xs text-gray-400 dark:text-gray-500">
+            {formatTimestampToIST(event.timestamp)}
           </time>
           {event.description && (
             <p className="text-sm text-gray-600 dark:text-gray-300">
